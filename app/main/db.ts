@@ -46,7 +46,7 @@ export class NotesRepo {
   private updateStmt
   private deleteStmt
 
-  constructor(private db: DB) {
+  constructor(db: DB) {
     this.listStmt = db.prepare(`SELECT * FROM notes ORDER BY sort_index ASC`)
     this.maxIndexStmt = db.prepare(`SELECT MAX(sort_index) AS max FROM notes`)
     this.insertStmt = db.prepare(
@@ -84,7 +84,7 @@ export class SettingsRepo {
   private getStmt
   private setStmt
 
-  constructor(private db: DB) {
+  constructor(db: DB) {
     this.getStmt = db.prepare(`SELECT value FROM app_settings WHERE key = ?`)
     this.setStmt = db.prepare(
       `INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`
