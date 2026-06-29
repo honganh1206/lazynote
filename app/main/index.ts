@@ -1,7 +1,9 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { initStore } from './store'
+import { registerIpc } from './ipc'
 
 function createWindow(): void {
   // Create the browser window.
@@ -39,6 +41,12 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  // Set the app name first: it determines app.getPath('userData')
+  // (~/.config/Antinote), so it MUST precede initStore().
+  app.setName('Antinote')
+  initStore()
+  registerIpc()
+
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
@@ -48,9 +56,6 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
-
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
 
   createWindow()
 
