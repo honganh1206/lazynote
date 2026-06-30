@@ -11,28 +11,56 @@
 # the packaged qml/*.qml and icon.png. They land at lazynote/qml and
 # lazynote/icon.png inside the bundle, matching Path(__file__).parent / "qml"
 # and the QML's ../icon.png at runtime.
+#
+# Size note: we do NOT collect_all("PySide6"). PyInstaller's built-in PySide6
+# hook collects only the Qt modules/plugins/QML actually imported. collect_all
+# would force the entire Qt stack (WebEngine, Qt3D, Charts, Multimedia,
+# QtQuick3D, Designer...) into the bundle -> ~200MB. The excludes below drop
+# heavy modules even if something pulls them in transitively. The app uses
+# QtCore/Gui/Widgets/Qml/Quick/QuickControls2 (+ Network/DBus/OpenGL); it stores
+# data via stdlib sqlite3, not QtSql.
 
-from PyInstaller.utils.hooks import collect_all, collect_data_files
+from PyInstaller.utils.hooks import collect_data_files
 
 datas = collect_data_files("lazynote")  # qml/*.qml + icon.png
-binaries = []
-hiddenimports = []
 
-# Pull in PySide6's Qt libs, plugins, and QML modules (QtQuick, Controls,
-# Qt.labs.platform). The bundled PySide6 hook handles most of this; collect_all
-# is the belt-and-suspenders version so QML imports resolve in the frozen app.
-_d, _b, _h = collect_all("PySide6")
-datas += _d
-binaries += _b
-hiddenimports += _h
+# Qt modules this app never uses; excluding keeps them out of the bundle.
+excludes = [
+    "tkinter",
+    "PySide6.QtWebEngineCore",
+    "PySide6.QtWebEngineWidgets",
+    "PySide6.QtWebEngineQuick",
+    "PySide6.QtWebChannel",
+    "PySide6.QtWebSockets",
+    "PySide6.QtMultimedia",
+    "PySide6.QtMultimediaWidgets",
+    "PySide6.QtCharts",
+    "PySide6.QtDataVisualization",
+    "PySide6.QtQuick3D",
+    "PySide6.QtPdf",
+    "PySide6.QtPdfWidgets",
+    "PySide6.QtDesigner",
+    "PySide6.QtSql",
+    "PySide6.QtTest",
+    "PySide6.QtBluetooth",
+    "PySide6.QtPositioning",
+    "PySide6.QtSensors",
+    "PySide6.QtSerialPort",
+    "PySide6.Qt3DCore",
+    "PySide6.Qt3DRender",
+    "PySide6.Qt3DInput",
+    "PySide6.Qt3DLogic",
+    "PySide6.Qt3DAnimation",
+    "PySide6.Qt3DExtras",
+]
 
 a = Analysis(
     ["../src/lazynote/__main__.py"],
     pathex=["../src"],
-    binaries=binaries,
+    binaries=[],
     datas=datas,
-    hiddenimports=hiddenimports,
-    excludes=["tkinter"],
+    hiddenimports=[],
+    excludes=excludes,
     noarchive=False,
 )
 
@@ -45,7 +73,7 @@ exe = EXE(
     exclude_binaries=True,
     name="lazynote",
     console=False,
-    strip=False,
+    strip=True,
     upx=False,
 )
 
@@ -53,7 +81,7 @@ coll = COLLECT(
     exe,
     a.binaries,
     a.datas,
-    strip=False,
+    strip=True,
     upx=False,
     name="lazynote",
 )
