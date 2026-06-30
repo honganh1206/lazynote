@@ -141,9 +141,10 @@ Item {
     ListView {
         id: list
         anchors.fill: parent
-        anchors.leftMargin: 8
-        anchors.rightMargin: 8
-        anchors.topMargin: 8
+        anchors.leftMargin: 16
+        anchors.rightMargin: 16
+        anchors.topMargin: 14
+        anchors.bottomMargin: 14
         model: 1
         spacing: 2
         clip: true
