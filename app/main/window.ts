@@ -39,3 +39,26 @@ export function trackGeometry(win: BrowserWindow): void {
     if (timer) clearTimeout(timer)
   })
 }
+
+// When the `auto_hide_on_blur` setting is on, hide the window shortly after it
+// loses focus. The setting is read live so toggling it via the tray takes effect
+// immediately. Cancelled if the window regains focus within the grace period.
+const AUTO_HIDE_MS = 300
+
+export function trackAutoHide(win: BrowserWindow): void {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  win.on('blur', () => {
+    if (getSettings().get('auto_hide_on_blur') !== 'true') return
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => {
+      timer = null
+      win.hide()
+    }, AUTO_HIDE_MS)
+  })
+  win.on('focus', () => {
+    if (timer) {
+      clearTimeout(timer)
+      timer = null
+    }
+  })
+}

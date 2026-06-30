@@ -4,7 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { initStore } from './store'
 import { registerIpc } from './ipc'
-import { restoreGeometry, trackGeometry } from './window'
+import { restoreGeometry, trackGeometry, trackAutoHide } from './window'
 import { registerShortcuts } from './shortcuts'
 import { createTray } from './tray'
 
@@ -33,6 +33,7 @@ function createWindow(): void {
   // Restore persisted position/size (if still on-screen), then keep tracking.
   restoreGeometry(mainWindow)
   trackGeometry(mainWindow)
+  trackAutoHide(mainWindow)
   registerShortcuts(mainWindow)
   createTray(mainWindow, icon)
 
