@@ -36,3 +36,5 @@ Thumbs.db
 
 # Local planning notes (not versioned)
 tasks/
+
+.worktrees/
