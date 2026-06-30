@@ -12,8 +12,12 @@
 
 ## Status
 
-Native rewrite in progress. See `docs/plans/2026-06-30-qtquick-pyside6-port.md`
-for the implementation plan and `…-design.md` for the architecture.
+Native rewrite in progress — all features below are implemented and the app runs.
+The editor has two implementations: **Option A** (`Editor.qml`, a `TextArea` +
+`QSyntaxHighlighter`) and the bespoke **Option B** (`EditorB.qml`, per-line styled
+delegates with real ☐/☑ checkboxes and animation), which is the default. See
+`docs/plans/2026-06-30-qtquick-pyside6-port.md` (plan) and `…-design.md`
+(architecture).
 
 ## Features (target parity)
 
@@ -44,9 +48,27 @@ python -m antinote_qt
 QT_QPA_PLATFORM=offscreen python -m antinote_qt
 
 # Tests + lint
-pytest -q
+QT_QPA_PLATFORM=offscreen pytest -q
 ruff check .
 ```
+
+## Packaging
+
+**Flatpak (primary)** — the KDE 6 runtime supplies Qt; the app stays small and gets
+portal access for the global shortcut:
+
+```bash
+flatpak install flathub org.kde.Platform//6.7 org.kde.Sdk//6.7
+flatpak-builder --user --install --force-clean build-dir data/com.honganh.antinote-qt.yml
+flatpak run com.honganh.antinote-qt
+```
+
+**.deb** — depends on system `python3-pyside6.*` packages; install the package and
+`antinote` is on `PATH`. (The Flatpak manifest is the maintained path; the deb
+recipe is a thin wrapper over `pip install --prefix`.)
+
+Notes migrate automatically on first launch from an older Electron
+(`~/.config/Antinote`) or Tauri (`~/.config/com.honganh.antinote-linux`) install.
 
 ## Project Structure
 

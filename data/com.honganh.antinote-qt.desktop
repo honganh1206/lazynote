@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Antinote
+Comment=A lightweight native scratchpad
+Exec=antinote
+Icon=com.honganh.antinote-qt
+Terminal=false
+Categories=Utility;TextEditor;
+StartupWMClass=Antinote
