@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import json
 
-from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
+from PySide6.QtCore import Property, Qt, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QGuiApplication
 
-from lazynote import store
+from lazynote import store, theme
 from lazynote.editormodel import line_render_spans
 from lazynote.geometry import Geometry, is_on_screen, parse_geometry
 from lazynote.notestate import NoteState
@@ -25,6 +25,7 @@ class Backend(QObject):
     statusChanged = Signal()
     autoHideChanged = Signal(bool)
     toggleWindowRequested = Signal()
+    themeChanged = Signal()
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -33,6 +34,45 @@ class Backend(QObject):
         self._save_timer.setSingleShot(True)
         self._save_timer.setInterval(SAVE_DEBOUNCE_MS)
         self._save_timer.timeout.connect(self._state.save_current)
+
+        hints = QGuiApplication.styleHints()
+        if hints is not None:
+            hints.colorSchemeChanged.connect(self._on_os_scheme_changed)
+
+    # ---- theme ----
+    def _os_scheme(self) -> str:
+        hints = QGuiApplication.styleHints()
+        if hints is None:
+            return "dark"
+        return "light" if hints.colorScheme() == Qt.ColorScheme.Light else "dark"
+
+    def _theme_mode(self) -> str:
+        m = store.get_settings().get("theme")
+        return m if m in ("system", "light", "dark") else "system"
+
+    def _on_os_scheme_changed(self, _scheme) -> None:
+        # Only the system-following mode cares about live OS changes.
+        if self._theme_mode() == "system":
+            self.themeChanged.emit()
+            self.contentChanged.emit()
+
+    def _theme(self) -> str:
+        return self._theme_mode()
+
+    theme = Property(str, _theme, notify=themeChanged)
+
+    def _colors(self) -> dict:
+        return theme.palette_for(self._theme_mode(), self._os_scheme())
+
+    colors = Property("QVariantMap", _colors, notify=themeChanged)
+
+    @Slot(str)
+    def set_theme(self, mode: str) -> None:
+        if mode not in ("system", "light", "dark"):
+            return
+        store.get_settings().set("theme", mode)
+        self.themeChanged.emit()
+        self.contentChanged.emit()
 
     # ---- properties ----
     def _content(self) -> str:
@@ -161,7 +201,8 @@ class Backend(QObject):
         Returns {"text": raw line text, "checkbox": ""|"checked"|"unchecked",
                  "spans": [{text,color,italic,strike,hidden,link}, ...]}.
         """
-        lr = line_render_spans(self._state.content, line, cursor_line)
+        pal = theme.palette_for(self._theme_mode(), self._os_scheme())
+        lr = line_render_spans(self._state.content, line, cursor_line, palette=pal)
         lines = self._state.content.split("\n")
         raw = lines[line] if 0 <= line < len(lines) else ""
         return {

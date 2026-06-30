@@ -76,6 +76,24 @@ ApplicationWindow {
             }
             Platform.MenuItem { text: "Toggle Auto-hide"; onTriggered: backend.toggle_auto_hide() }
             Platform.MenuSeparator {}
+            // Theme items are flat (not a submenu): Qt.labs.platform's DBus tray
+            // menu corrupts the heap when a nested Menu sits between separators.
+            Platform.MenuItem {
+                text: "Theme: System"; checkable: true
+                checked: backend && backend.theme === "system"
+                onTriggered: backend.set_theme("system")
+            }
+            Platform.MenuItem {
+                text: "Theme: Light"; checkable: true
+                checked: backend && backend.theme === "light"
+                onTriggered: backend.set_theme("light")
+            }
+            Platform.MenuItem {
+                text: "Theme: Dark"; checkable: true
+                checked: backend && backend.theme === "dark"
+                onTriggered: backend.set_theme("dark")
+            }
+            Platform.MenuSeparator {}
             Platform.MenuItem { text: "Quit"; onTriggered: { backend.flush(); Qt.quit() } }
         }
     }
@@ -88,7 +106,7 @@ ApplicationWindow {
     Rectangle {
         id: panel
         anchors.fill: parent
-        color: "#1f2023"
+        color: backend ? backend.colors.bg : "#1f2023"
         radius: 10
 
         Rectangle {
@@ -117,7 +135,7 @@ ApplicationWindow {
             anchors.bottom: parent.bottom
             anchors.rightMargin: 12
             anchors.bottomMargin: 8
-            color: "#6f6b64"
+            color: backend ? backend.colors.muted : "#6f6b64"
             font.pixelSize: 11
             text: backend
                   ? (backend.mode ? backend.mode + " · " : "") + (backend.index + 1) + "/" + backend.count

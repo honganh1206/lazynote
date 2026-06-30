@@ -8,10 +8,21 @@ highlight.compute_ranges and turns the document into per-line, per-character spa
 from __future__ import annotations
 
 from lazynote.editormodel import LineRender, line_render_spans
+from lazynote.theme import PALETTES
 
 
 def _render(doc: str, line: int, cursor: int) -> LineRender:
     return line_render_spans(doc, line, cursor)
+
+
+def test_light_palette_changes_heading_color():
+    r = line_render_spans("# Big", 0, -1, palette=PALETTES["light"])
+    assert r.spans[0].color.lower() == "#b9701f"  # light amber
+
+
+def test_default_palette_is_dark():
+    r = line_render_spans("# Big", 0, -1)
+    assert r.spans[0].color.lower() == "#e6a86b"  # dark amber
 
 
 def test_plain_line_single_text_span():
