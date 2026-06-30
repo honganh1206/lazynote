@@ -17,8 +17,8 @@ Item {
     clip: true
 
     // ---- palette ----
-    readonly property color colText: "#d6d3cc"
-    readonly property color colMuted: "#6f6b64"
+    readonly property color colText: backend ? backend.colors.text : "#d6d3cc"
+    readonly property color colMuted: backend ? backend.colors.muted : "#6f6b64"
 
     // ---- document state (source of truth) ----
     property string docText: ""
@@ -114,6 +114,13 @@ Item {
         docText = backend.content
         rebuildLines()
         Qt.callLater(focusEditor)
+    }
+
+    // Re-pull static span colors when the palette changes (content is unchanged,
+    // so onContentChanged would short-circuit and leave stale colors).
+    Connections {
+        target: backend
+        function onThemeChanged() { root.bumpVersion() }
     }
 
     // Pull external content changes (navigate / new / delete / slash / toggle).
@@ -245,7 +252,7 @@ Item {
                     id: input
                     text: root.lines[row.index] !== undefined ? root.lines[row.index] : ""
                     color: root.colText
-                    selectionColor: "#34363b"
+                    selectionColor: backend ? backend.colors.selection : "#34363b"
                     selectByMouse: true
                     font.pixelSize: 15
                     verticalAlignment: TextInput.AlignVCenter
