@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { initStore } from './store'
 import { registerIpc } from './ipc'
+import { restoreGeometry, trackGeometry } from './window'
 
 function createWindow(): void {
   // Create the browser window.
@@ -26,6 +27,10 @@ function createWindow(): void {
       contextIsolation: true
     }
   })
+
+  // Restore persisted position/size (if still on-screen), then keep tracking.
+  restoreGeometry(mainWindow)
+  trackGeometry(mainWindow)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
