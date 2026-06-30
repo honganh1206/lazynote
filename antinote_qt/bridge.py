@@ -22,6 +22,7 @@ SAVE_DEBOUNCE_MS = 500
 class Backend(QObject):
     contentChanged = Signal()
     statusChanged = Signal()
+    autoHideChanged = Signal(bool)
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -112,6 +113,17 @@ class Backend(QObject):
     @Slot(str, str)
     def setting_set(self, key: str, value: str) -> None:
         store.get_settings().set(key, value)
+
+    @Slot(result=bool)
+    def auto_hide_enabled(self) -> bool:
+        return store.get_settings().get("auto_hide_on_blur") == "true"
+
+    @Slot(result=bool)
+    def toggle_auto_hide(self) -> bool:
+        nxt = not self.auto_hide_enabled()
+        store.get_settings().set("auto_hide_on_blur", "true" if nxt else "false")
+        self.autoHideChanged.emit(nxt)
+        return nxt
 
     @Slot(str)
     def open_url(self, url: str) -> None:

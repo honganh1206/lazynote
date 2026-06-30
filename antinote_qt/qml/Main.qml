@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import Qt.labs.platform as Platform
 
 ApplicationWindow {
     id: win
@@ -14,6 +15,42 @@ ApplicationWindow {
 
     property bool slashActive: backend && backend.content.split("\n")[0] === "/"
     onSlashActiveChanged: slashActive ? picker.open() : picker.close()
+
+    function toggleVisible() {
+        if (win.visible) {
+            win.hide()
+        } else {
+            win.show()
+            win.raise()
+            win.requestActivate()
+        }
+    }
+
+    function setAlwaysOnTop(on) {
+        win.flags = Qt.Window | Qt.FramelessWindowHint | (on ? Qt.WindowStaysOnTopHint : 0)
+        backend.setting_set("always_on_top", on ? "true" : "false")
+    }
+
+    Platform.SystemTrayIcon {
+        visible: true
+        icon.source: Qt.resolvedUrl("../icon.png")
+        tooltip: "Antinote"
+        menu: Platform.Menu {
+            Platform.MenuItem { text: "Show/Hide"; onTriggered: win.toggleVisible() }
+            Platform.MenuItem {
+                text: "New Note"
+                onTriggered: { win.show(); win.raise(); win.requestActivate(); backend.new_note() }
+            }
+            Platform.MenuSeparator {}
+            Platform.MenuItem {
+                text: "Toggle Always on Top"
+                onTriggered: win.setAlwaysOnTop((win.flags & Qt.WindowStaysOnTopHint) === 0)
+            }
+            Platform.MenuItem { text: "Toggle Auto-hide"; onTriggered: backend.toggle_auto_hide() }
+            Platform.MenuSeparator {}
+            Platform.MenuItem { text: "Quit"; onTriggered: { backend.flush(); Qt.quit() } }
+        }
+    }
 
     Shortcut { sequence: "Ctrl+H"; onActivated: backend.navigate(-1) }
     Shortcut { sequence: "Ctrl+L"; onActivated: backend.navigate(1) }
