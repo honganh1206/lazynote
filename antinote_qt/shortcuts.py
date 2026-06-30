@@ -38,6 +38,10 @@ class GlobalShortcut(QObject):
         root = dpy.screen().root
         keycode = dpy.keysym_to_keycode(XK.string_to_keysym("a"))
         alt = X.Mod1Mask
+        # Swallow BadAccess: Alt+A may already be grabbed by the desktop / another
+        # app. We degrade quietly (the tray still toggles) instead of crashing the
+        # listener thread with an uncaught Xlib error.
+        dpy.set_error_handler(lambda *_: None)
         # Grab Alt+A under the common lock-mask combinations (NumLock / CapsLock).
         for extra in (0, X.LockMask, X.Mod2Mask, X.LockMask | X.Mod2Mask):
             root.grab_key(keycode, alt | extra, True, X.GrabModeAsync, X.GrabModeAsync)

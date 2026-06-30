@@ -6,9 +6,11 @@ Uses QApplication (not QGuiApplication) because the system tray
 
 from __future__ import annotations
 
+import signal
 import sys
 from pathlib import Path
 
+from PySide6.QtCore import QTimer
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtWidgets import QApplication
@@ -55,6 +57,20 @@ def main() -> int:
     app.setOrganizationName("antinote-qt")
     engine = create_engine(app)
     app._engine = engine  # type: ignore[attr-defined]
+
+    # Make Ctrl-C work. Qt's event loop is C++ and never returns to Python to run
+    # signal handlers, so (1) handle SIGINT by quitting and (2) wake the interpreter
+    # periodically with a no-op timer so the handler actually fires.
+    signal.signal(signal.SIGINT, lambda *_: app.quit())
+    heartbeat = QTimer()
+    heartbeat.start(200)
+    heartbeat.timeout.connect(lambda: None)
+    app._heartbeat = heartbeat  # type: ignore[attr-defined]
+
+    # Flush pending save and release the global-shortcut grab on exit.
+    app.aboutToQuit.connect(engine._backend.flush)  # type: ignore[attr-defined]
+    app.aboutToQuit.connect(engine._shortcut.stop)  # type: ignore[attr-defined]
+
     return app.exec()
 
 
