@@ -1,16 +1,23 @@
-# Dependencies
-node_modules/
-
-# Build output
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
 dist/
-out/
-*.tsbuildinfo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 
-# Vite / electron-vite (temp config builds)
-*.config.*.timestamp-*
+# Virtualenvs
+.venv/
+venv/
 
-# electron-builder
-dev-app-update.yml
+# Packaging output
+*.deb
+*.AppImage
+.flatpak-builder/
+flatpak-repo/
 
 # Environment
 .env
@@ -27,4 +34,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Local planning notes (not versioned)
 tasks/

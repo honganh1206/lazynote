@@ -5,19 +5,19 @@
 </p>
 
 <p align="center">
-  A lightweight, always-accessible scratchpad for Linux, inspired by <a href="https://antinote.io/">Antinote</a>.<br>
-  Built with <a href="https://www.electronjs.org/">Electron</a> + <a href="https://svelte.dev/">Svelte 5</a> + <a href="https://codemirror.net/">CodeMirror 6</a>.
+  A lightweight, always-accessible <b>native</b> scratchpad for Linux, inspired by
+  <a href="https://antinote.io/">Antinote</a>.<br>
+  Built with <a href="https://doc.qt.io/qtforpython/">PySide6</a> + Qt Quick (QML).
 </p>
 
-## Demo
+## Status
 
-<p align="center">
-  <img src="docs/demo.gif" alt="Antinote demo" width="600">
-</p>
+Native rewrite in progress. See `docs/plans/2026-06-30-qtquick-pyside6-port.md`
+for the implementation plan and `…-design.md` for the architecture.
 
-## Features
+## Features (target parity)
 
-- Frameless, transparent, always-on-top scratchpad window
+- Frameless, translucent, always-on-top scratchpad window
 - Multiple notes with quick navigation and a position counter
 - Auto-save to a local SQLite database
 - Global hotkey **Alt+A** to toggle show/hide
@@ -28,93 +28,39 @@
 
 ## Prerequisites
 
-Only **Node.js 18+** and **npm** are required — no Rust, no system WebKit/GTK
-development packages.
+- **Python 3.12+**
+- A Qt 6 platform (PySide6 ships its own Qt for development)
 
-Install Node.js via [nvm](https://github.com/nvm-sh/nvm) or your package manager:
-
-```bash
-nvm install 22
-nvm use 22
-```
-
-Running the produced **AppImage** additionally needs `libfuse2`:
+## Development
 
 ```bash
-# Debian / Ubuntu / Pop!_OS
-sudo apt install -y libfuse2
-```
+python -m venv .venv && source .venv/bin/activate
+pip install -e .[dev]
 
-## Local Development
+# Run (needs a display)
+python -m antinote_qt
 
-```bash
-# Install dependencies, then rebuild the better-sqlite3 native module for Electron
-npm install
-npm run rebuild
+# Headless smoke (no UI shown)
+QT_QPA_PLATFORM=offscreen python -m antinote_qt
 
-# Run in development mode (electron-vite dev server + Electron window)
-npm run dev
-```
-
-> **Note:** `better-sqlite3` is a native module compiled against Electron's ABI.
-> `npm run rebuild` builds it for Electron. To run the unit tests (which execute
-> under plain Node), run `npm rebuild better-sqlite3` first, then `npm test`, then
-> `npm run rebuild` again to restore the Electron build.
-
-## Build & Package
-
-```bash
-# Type-check and run tests
-npm run check
-npm test
-
-# Build the app bundles (outputs to out/)
-npm run build
-
-# Produce distributable .deb and .AppImage (outputs to dist/)
-npm run package
+# Tests + lint
+pytest -q
+ruff check .
 ```
 
 ## Project Structure
 
 ```
-antinote-linux/
-├── app/
-│   ├── main/             # Electron main process (window, tray, shortcuts, SQLite)
-│   ├── preload/          # contextBridge → typed window.api
-│   └── renderer/         # Svelte 5 + CodeMirror 6 UI
-│       └── src/
-│           ├── App.svelte
-│           ├── Editor.svelte        # CodeMirror 6 wrapper
-│           ├── SlashPicker.svelte
-│           └── lib/                 # state, api bridge, parsers, editor extensions
-├── electron.vite.config.ts
-├── electron-builder.yml
-└── docs/                 # PRD, roadmap, design docs
+antinote_qt/        # application package (Python + QML)
+  app.py            # entry: QApplication + QML engine
+  qml/              # QML UI
+  parse/            # pure parsers (links, todo, mode)
+  highlight.py      # pure: syntax range computation
+  db.py             # sqlite storage
+tests/              # pytest
+docs/plans/         # design + implementation plan
+pyproject.toml
 ```
-
-## Releasing
-
-### Version bump
-
-```bash
-./release.sh 0.2.0
-```
-
-This updates the version in `package.json` (electron-builder reads it from there).
-
-### Creating a release
-
-```bash
-git add package.json
-git commit -m "chore: bump version to 0.2.0"
-git tag v0.2.0
-git push origin main --tags
-```
-
-Pushing a `v*` tag triggers the GitHub Actions workflow, which builds the app on
-`ubuntu-22.04` and creates a **draft** GitHub release with `.deb` and `.AppImage`
-artifacts. Review and publish it from the GitHub Releases page.
 
 ## License
 

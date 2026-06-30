@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "antinote-qt"
+version = "0.1.0"
+description = "A lightweight, native scratchpad for Linux, inspired by Antinote. Qt Quick + PySide6."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+dependencies = ["PySide6>=6.8"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+antinote = "antinote_qt.app:main"
+
+[tool.setuptools]
+packages = ["antinote_qt", "antinote_qt.parse"]
+
+[tool.setuptools.package-data]
+antinote_qt = ["qml/*.qml", "qml/*.js", "style.css"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
