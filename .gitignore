@@ -15,9 +15,8 @@ venv/
 
 # Packaging output
 *.deb
-*.AppImage
-.flatpak-builder/
-flatpak-repo/
+build/
+dist/
 
 # Environment
 .env

@@ -54,18 +54,18 @@ ruff check .
 
 ## Packaging
 
-**Flatpak (primary)** — the KDE 6 runtime supplies Qt; the app stays small and gets
-portal access for the global shortcut:
+**.deb** — a self-contained package (Python + Qt 6 bundled via PyInstaller, no
+runtime `python3`/`pyside6` deps). Build locally:
 
 ```bash
-flatpak install flathub org.kde.Platform//6.7 org.kde.Sdk//6.7
-flatpak-builder --user --install --force-clean build-dir data/com.honganh.lazynote.yml
-flatpak run com.honganh.lazynote
+pip install pyinstaller .
+pyinstaller --noconfirm packaging/lazynote.spec   # -> dist/lazynote/
+bash packaging/build-deb.sh 0.1.6                  # -> dist/lazynote_0.1.6_amd64.deb
 ```
 
-**.deb** — depends on system `python3-pyside6.*` packages; install the package and
-`lazynote` is on `PATH`. (The Flatpak manifest is the maintained path; the deb
-recipe is a thin wrapper over `pip install --prefix`.)
+Install with `sudo apt install ./lazynote_*.deb` (or `sudo dpkg -i`); `lazynote`
+lands on `PATH`. Releases build the `.deb` automatically — see
+`.github/workflows/cd.yml` (runs when a GitHub Release is published).
 
 Notes migrate automatically on first launch from an older Electron
 (`~/.config/Antinote`) or Tauri (`~/.config/com.honganh.antinote-linux`) install.
@@ -83,7 +83,8 @@ src/lazynote/        # application package (Python + QML)
   db.py              # sqlite storage
   store.py           # config dir + legacy import
 tests/               # pytest
-data/                # .desktop, AppStream metainfo, Flatpak manifest
+data/                # .desktop, AppStream metainfo
+packaging/           # PyInstaller spec + build-deb.sh
 docs/plans/          # design + implementation plan
 pyproject.toml
 ```

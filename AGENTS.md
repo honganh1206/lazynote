@@ -15,7 +15,7 @@ of this native port (it remains in git history if a TS reference is needed —
 - **Python 3.12+**, **PySide6 (Qt 6)**, UI in **QML** (Qt Quick + Controls)
 - **sqlite3** (stdlib) for storage — no native build
 - **pytest** for the pure logic; **ruff** for lint/format
-- Tray via `Qt.labs.platform`; packaging via Flatpak (KDE runtime) + .deb
+- Tray via `Qt.labs.platform`; packaging via .deb (PyInstaller bundle, see packaging/)
 
 ## Layout (src layout)
 
@@ -34,7 +34,8 @@ src/lazynote/
   geometry.py        # PURE: is_on_screen / parse_geometry — TESTED
   shortcuts.py       # Alt+A global hotkey (X11 grab, degrades)
 tests/               # pytest
-data/                # .desktop, AppStream metainfo, Flatpak manifest
+data/                # .desktop, AppStream metainfo
+packaging/           # PyInstaller spec + build-deb.sh (CD: .github/workflows/cd.yml)
 docs/plans/          # design + implementation plan (the spec)
 pyproject.toml
 ```

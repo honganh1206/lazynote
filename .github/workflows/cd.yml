@@ -1,6 +1,6 @@
 name: CD
 
-# Build and attach a .deb and a Flatpak bundle to a GitHub Release.
+# Build and attach a .deb to a GitHub Release.
 # Trigger: publish a Release (tag like v0.1.0). The tag name (minus the
 # leading "v") becomes the package version.
 on:
@@ -33,22 +33,3 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*.deb
-
-  flatpak:
-    name: Build Flatpak bundle
-    runs-on: ubuntu-latest
-    container:
-      image: bilelmoussaoui/flatpak-github-actions:kde-6.8
-      options: --privileged
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build bundle
-        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
-        with:
-          bundle: com.honganh.lazynote.flatpak
-          manifest-path: data/com.honganh.lazynote.yml
-          cache-key: flatpak-builder-${{ github.sha }}
-      - name: Upload to release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: com.honganh.lazynote.flatpak
