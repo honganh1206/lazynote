@@ -6,7 +6,7 @@
 
 <p align="center">
   A lightweight, always-accessible scratchpad for Linux, inspired by <a href="https://antinote.io/">Antinote</a>.<br>
-  Built with <a href="https://tauri.app/">Tauri 2</a> + <a href="https://svelte.dev/">Svelte 5</a>.
+  Built with <a href="https://www.electronjs.org/">Electron</a> + <a href="https://svelte.dev/">Svelte 5</a> + <a href="https://codemirror.net/">CodeMirror 6</a>.
 </p>
 
 ## Demo
@@ -15,131 +15,106 @@
   <img src="docs/demo.gif" alt="Antinote demo" width="600">
 </p>
 
+## Features
+
+- Frameless, transparent, always-on-top scratchpad window
+- Multiple notes with quick navigation and a position counter
+- Auto-save to a local SQLite database
+- Global hotkey **Alt+A** to toggle show/hide
+- System tray menu (show/hide, new note, toggle always-on-top, toggle auto-hide, quit)
+- Window position/size remembered across restarts
+- `todo:` mode with checklist items (`/x` to check), `#` headings, `//` comments
+- Plain mode with markdown-style headings and clickable links
+
 ## Prerequisites
 
-### System dependencies
+Only **Node.js 18+** and **npm** are required — no Rust, no system WebKit/GTK
+development packages.
 
-**Ubuntu / Pop!_OS 22.04+:**
-
-```bash
-sudo apt update
-sudo apt install -y \
-  libwebkit2gtk-4.1-dev \
-  libsoup-3.0-dev \
-  libgtk-3-dev \
-  libayatana-appindicator3-dev \
-  librsvg2-dev \
-  build-essential \
-  patchelf
-```
-
-**Fedora:**
-
-```bash
-sudo dnf install -y \
-  webkit2gtk4.1-devel \
-  libsoup3-devel \
-  gtk3-devel \
-  libappindicator-gtk3-devel \
-  librsvg2-devel \
-  patchelf
-```
-
-**Arch Linux:**
-
-```bash
-sudo pacman -S --needed \
-  webkit2gtk-4.1 \
-  libsoup3 \
-  gtk3 \
-  libappindicator-gtk3 \
-  librsvg \
-  patchelf
-```
-
-### Rust
-
-Install via [rustup](https://rustup.rs/):
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-### Node.js
-
-Install Node.js 18+ via [nvm](https://github.com/nvm-sh/nvm) or your package manager:
+Install Node.js via [nvm](https://github.com/nvm-sh/nvm) or your package manager:
 
 ```bash
 nvm install 22
 nvm use 22
 ```
 
+Running the produced **AppImage** additionally needs `libfuse2`:
+
+```bash
+# Debian / Ubuntu / Pop!_OS
+sudo apt install -y libfuse2
+```
+
 ## Local Development
 
 ```bash
-# Install npm dependencies
+# Install dependencies, then rebuild the better-sqlite3 native module for Electron
 npm install
+npm run rebuild
 
-# Run in development mode (starts Vite dev server + Tauri window)
-npm run tauri dev
+# Run in development mode (electron-vite dev server + Electron window)
+npm run dev
 ```
 
-## Build
+> **Note:** `better-sqlite3` is a native module compiled against Electron's ABI.
+> `npm run rebuild` builds it for Electron. To run the unit tests (which execute
+> under plain Node), run `npm rebuild better-sqlite3` first, then `npm test`, then
+> `npm run rebuild` again to restore the Electron build.
+
+## Build & Package
 
 ```bash
-# Production build (outputs to src-tauri/target/release/bundle/)
-npm run tauri build
+# Type-check and run tests
+npm run check
+npm test
+
+# Build the app bundles (outputs to out/)
+npm run build
+
+# Produce distributable .deb and .AppImage (outputs to dist/)
+npm run package
 ```
 
 ## Project Structure
 
 ```
 antinote-linux/
-├── src/                  # Svelte frontend
-│   ├── App.svelte        # Main app component
-│   └── main.js           # Svelte entry point
-├── src-tauri/            # Tauri/Rust backend
-│   ├── src/
-│   │   ├── lib.rs        # App setup and Tauri commands
-│   │   └── main.rs       # Entry point
-│   ├── capabilities/     # Tauri permission definitions
-│   ├── icons/            # App icons
-│   ├── Cargo.toml        # Rust dependencies
-│   └── tauri.conf.json   # Tauri configuration
-├── tasks/                # PRD and roadmap docs
-├── index.html            # HTML entry point
-├── package.json          # Node dependencies
-└── vite.config.js        # Vite configuration
+├── app/
+│   ├── main/             # Electron main process (window, tray, shortcuts, SQLite)
+│   ├── preload/          # contextBridge → typed window.api
+│   └── renderer/         # Svelte 5 + CodeMirror 6 UI
+│       └── src/
+│           ├── App.svelte
+│           ├── Editor.svelte        # CodeMirror 6 wrapper
+│           ├── SlashPicker.svelte
+│           └── lib/                 # state, api bridge, parsers, editor extensions
+├── electron.vite.config.ts
+├── electron-builder.yml
+└── docs/                 # PRD, roadmap, design docs
 ```
 
 ## Releasing
 
 ### Version bump
 
-Use the release script to update version numbers across all config files:
-
 ```bash
 ./release.sh 0.2.0
 ```
 
-This updates `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml`.
+This updates the version in `package.json` (electron-builder reads it from there).
 
 ### Creating a release
 
-After bumping the version:
-
 ```bash
-git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
+git add package.json
 git commit -m "chore: bump version to 0.2.0"
 git tag v0.2.0
 git push origin main --tags
 ```
 
-Pushing a `v*` tag triggers the GitHub Actions workflow, which:
-1. Builds the Tauri app on `ubuntu-22.04`
-2. Creates a **draft** GitHub release with `.deb` and `.AppImage` artifacts
-
-Go to the GitHub Releases page to review and publish the draft.
+Pushing a `v*` tag triggers the GitHub Actions workflow, which builds the app on
+`ubuntu-22.04` and creates a **draft** GitHub release with `.deb` and `.AppImage`
+artifacts. Review and publish it from the GitHub Releases page.
 
 ## License
 
