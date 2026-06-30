@@ -1,4 +1,4 @@
-appId: com.antinote.app
+appId: com.honganh.antinote-linux
 productName: Antinote
 directories:
   buildResources: build
@@ -12,6 +12,7 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - resources/**
+  - '**/node_modules/better-sqlite3/**'
 win:
   executableName: Antinote
 nsis:
@@ -32,13 +33,11 @@ dmg:
 linux:
   target:
     - AppImage
-    - snap
     - deb
-  maintainer: electronjs.org
+  maintainer: Hong Anh Pham
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
-npmRebuild: false
-publish:
-  provider: generic
-  url: https://example.com/auto-updates
+deb:
+  artifactName: ${name}-${version}.${ext}
+npmRebuild: true
