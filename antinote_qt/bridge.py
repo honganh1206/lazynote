@@ -13,6 +13,7 @@ from PySide6.QtGui import QDesktopServices, QGuiApplication
 from PySide6.QtQuick import QQuickTextDocument
 
 from antinote_qt import store
+from antinote_qt.editormodel import line_render_spans
 from antinote_qt.geometry import Geometry, is_on_screen, parse_geometry
 from antinote_qt.highlight import compute_ranges
 from antinote_qt.highlighter import SyntaxHighlighter
@@ -179,3 +180,47 @@ class Backend(QObject):
             if r.kind == "link" and r.from_ <= pos < r.to:
                 return self._state.content[r.from_ : r.to]
         return ""
+
+    # ---- bespoke editor (Option B) ----
+    @Slot(result=int)
+    def line_count(self) -> int:
+        return self._state.content.count("\n") + 1
+
+    @Slot(int, int, result="QVariantMap")
+    def line_render(self, line: int, cursor_line: int) -> dict:
+        """Per-line render data for the bespoke editor: styled spans + checkbox.
+
+        Returns {"text": raw line text, "checkbox": ""|"checked"|"unchecked",
+                 "spans": [{text,color,italic,strike,hidden,link}, ...]}.
+        """
+        lr = line_render_spans(self._state.content, line, cursor_line)
+        lines = self._state.content.split("\n")
+        raw = lines[line] if 0 <= line < len(lines) else ""
+        return {
+            "text": raw,
+            "checkbox": lr.checkbox or "",
+            "spans": [
+                {
+                    "text": s.text,
+                    "color": s.color,
+                    "italic": s.italic,
+                    "strike": s.strike,
+                    "hidden": s.hidden,
+                    "link": s.link,
+                }
+                for s in lr.spans
+            ],
+        }
+
+    @Slot(int)
+    def toggle_checkbox(self, line: int) -> None:
+        """Toggle the trailing /x on a todo checklist line, then re-emit content."""
+        lines = self._state.content.split("\n")
+        if not (0 <= line < len(lines)):
+            return
+        text = lines[line]
+        # Only meaningful for non-heading, non-comment, non-empty todo items.
+        if text.strip() == "" or text.startswith("#") or text.startswith("//"):
+            return
+        lines[line] = text[:-2] if text.endswith("/x") else text + "/x"
+        self.edit("\n".join(lines))

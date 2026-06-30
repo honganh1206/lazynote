@@ -103,7 +103,7 @@ ApplicationWindow {
             }
         }
 
-        Editor {
+        EditorB {
             id: editor
             anchors {
                 left: parent.left; right: parent.right
