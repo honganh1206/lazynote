@@ -8,8 +8,11 @@ from __future__ import annotations
 
 from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
+from PySide6.QtQuick import QQuickTextDocument
 
 from antinote_qt import store
+from antinote_qt.highlight import compute_ranges
+from antinote_qt.highlighter import SyntaxHighlighter
 from antinote_qt.notestate import NoteState
 from antinote_qt.parse.mode import detect_mode
 
@@ -27,6 +30,7 @@ class Backend(QObject):
         self._save_timer.setSingleShot(True)
         self._save_timer.setInterval(SAVE_DEBOUNCE_MS)
         self._save_timer.timeout.connect(self._state.save_current)
+        self._highlighter: SyntaxHighlighter | None = None
 
     # ---- properties ----
     def _content(self) -> str:
@@ -107,3 +111,27 @@ class Backend(QObject):
     @Slot(str)
     def open_url(self, url: str) -> None:
         QDesktopServices.openUrl(QUrl(url))
+
+    # ---- editor highlighting (Option A) ----
+    @Slot(QQuickTextDocument)
+    def attach_highlighter(self, quick_text_document: QQuickTextDocument) -> None:
+        td = quick_text_document.textDocument
+        qdoc = td() if callable(td) else td
+        self._highlighter = SyntaxHighlighter(qdoc)
+
+    @Slot(int)
+    def set_cursor_line(self, line: int) -> None:
+        if self._highlighter is not None:
+            self._highlighter.set_cursor_line(line)
+
+    @Slot()
+    def refresh_highlight(self) -> None:
+        if self._highlighter is not None:
+            self._highlighter.schedule_rehighlight()
+
+    @Slot(int, result=str)
+    def url_at(self, pos: int) -> str:
+        for r in compute_ranges(self._state.content, -1):
+            if r.kind == "link" and r.from_ <= pos < r.to:
+                return self._state.content[r.from_ : r.to]
+        return ""

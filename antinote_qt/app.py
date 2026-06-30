@@ -13,19 +13,27 @@ from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtWidgets import QApplication
 
+from antinote_qt import store
+from antinote_qt.bridge import Backend
+
 QML_DIR = Path(__file__).parent / "qml"
 
 
 def create_engine(app: QGuiApplication) -> QQmlApplicationEngine:
-    """Build the QML engine and load the root window. Returns the engine.
+    """Open the store, build the QML engine, expose the backend, load the window.
 
     Separated from main() so a headless smoke test can construct it under
     QT_QPA_PLATFORM=offscreen without entering the event loop.
     """
+    store.init_store()
     engine = QQmlApplicationEngine()
+    backend = Backend()
+    engine.rootContext().setContextProperty("backend", backend)
     engine.load(str(QML_DIR / "Main.qml"))
     if not engine.rootObjects():
         raise RuntimeError("Failed to load Main.qml")
+    # Keep references so they aren't garbage-collected.
+    engine._backend = backend  # type: ignore[attr-defined]
     return engine
 
 
@@ -34,7 +42,6 @@ def main() -> int:
     app.setApplicationName("Antinote")
     app.setOrganizationName("antinote-qt")
     engine = create_engine(app)
-    # Keep a reference so it isn't garbage-collected.
     app._engine = engine  # type: ignore[attr-defined]
     return app.exec()
 
