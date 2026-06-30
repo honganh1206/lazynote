@@ -9,9 +9,9 @@ from __future__ import annotations
 import json
 
 from PySide6.QtCore import Property, Qt, QObject, QTimer, QUrl, Signal, Slot
-from PySide6.QtGui import QDesktopServices, QGuiApplication
+from PySide6.QtGui import QDesktopServices, QFontDatabase, QGuiApplication
 
-from lazynote import store, theme
+from lazynote import fonts, store, theme
 from lazynote.editormodel import line_render_spans
 from lazynote.geometry import Geometry, is_on_screen, parse_geometry
 from lazynote.notestate import NoteState
@@ -26,6 +26,7 @@ class Backend(QObject):
     autoHideChanged = Signal(bool)
     toggleWindowRequested = Signal()
     themeChanged = Signal()
+    fontChanged = Signal()
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -73,6 +74,34 @@ class Backend(QObject):
         store.get_settings().set("theme", mode)
         self.themeChanged.emit()
         self.contentChanged.emit()
+
+    # ---- font ----
+    def _default_family(self) -> str:
+        return QFontDatabase.systemFont(QFontDatabase.SystemFont.FixedFont).family()
+
+    @Slot(result="QStringList")
+    def mono_families(self) -> list[str]:
+        mono = sorted(f for f in QFontDatabase.families() if QFontDatabase.isFixedPitch(f))
+        return mono if mono else sorted(QFontDatabase.families())
+
+    def _font(self) -> dict:
+        s = store.get_settings()
+        return fonts.resolve_font(
+            s.get("font_family") or "",
+            s.get("font_size"),
+            self.mono_families(),
+            self._default_family(),
+        )
+
+    font = Property("QVariantMap", _font, notify=fontChanged)
+
+    @Slot(str, int)
+    def set_font(self, family: str, size: int) -> None:
+        s = store.get_settings()
+        if family:
+            s.set("font_family", family)
+        s.set("font_size", str(fonts._clamp_size(size)))
+        self.fontChanged.emit()
 
     # ---- properties ----
     def _content(self) -> str:
