@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 
 from PySide6.QtCore import Property, Qt, QObject, QTimer, QUrl, Signal, Slot
-from PySide6.QtGui import QDesktopServices, QFontDatabase, QGuiApplication
+from PySide6.QtGui import QDesktopServices, QFontDatabase, QFontInfo, QGuiApplication
 
 from lazynote import fonts, store, theme
 from lazynote.editormodel import line_render_spans
@@ -30,6 +30,7 @@ class Backend(QObject):
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
+        self._mono_cache: list[str] | None = None
         self._state = NoteState(store.get_notes(), store.get_settings())
         self._save_timer = QTimer(self)
         self._save_timer.setSingleShot(True)
@@ -77,12 +78,21 @@ class Backend(QObject):
 
     # ---- font ----
     def _default_family(self) -> str:
-        return QFontDatabase.systemFont(QFontDatabase.SystemFont.FixedFont).family()
+        fixed = QFontDatabase.systemFont(QFontDatabase.SystemFont.FixedFont)
+        resolved = QFontInfo(fixed).family()
+        mono = self.mono_families()
+        if resolved in mono:
+            return resolved
+        return mono[0] if mono else resolved
 
     @Slot(result="QStringList")
     def mono_families(self) -> list[str]:
-        mono = sorted(f for f in QFontDatabase.families() if QFontDatabase.isFixedPitch(f))
-        return mono if mono else sorted(QFontDatabase.families())
+        if self._mono_cache is None:
+            mono = sorted(
+                f for f in QFontDatabase.families() if QFontDatabase.isFixedPitch(f)
+            )
+            self._mono_cache = mono if mono else sorted(QFontDatabase.families())
+        return self._mono_cache
 
     def _font(self) -> dict:
         s = store.get_settings()
