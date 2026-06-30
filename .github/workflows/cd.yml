@@ -1,0 +1,54 @@
+name: CD
+
+# Build and attach a .deb and a Flatpak bundle to a GitHub Release.
+# Trigger: publish a Release (tag like v0.1.0). The tag name (minus the
+# leading "v") becomes the package version.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write # upload release assets
+
+jobs:
+  deb:
+    name: Build .deb (PyInstaller)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: System libs for Qt
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3
+      - name: Install + PyInstaller
+        run: pip install pyinstaller .
+      - name: Freeze app
+        run: pyinstaller --noconfirm packaging/lazynote.spec
+      - name: Build .deb
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          bash packaging/build-deb.sh "$VERSION"
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.deb
+
+  flatpak:
+    name: Build Flatpak bundle
+    runs-on: ubuntu-latest
+    container:
+      image: bilelmoussaoui/flatpak-github-actions:kde-6.7
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build bundle
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: com.honganh.lazynote.flatpak
+          manifest-path: data/com.honganh.lazynote.yml
+          cache-key: flatpak-builder-${{ github.sha }}
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: com.honganh.lazynote.flatpak
