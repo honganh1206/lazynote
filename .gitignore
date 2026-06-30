@@ -4,10 +4,13 @@ node_modules/
 # Build output
 dist/
 out/
+*.tsbuildinfo
 
-# Vite
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
+# Vite / electron-vite (temp config builds)
+*.config.*.timestamp-*
+
+# electron-builder
+dev-app-update.yml
 
 # Environment
 .env
