@@ -4,6 +4,7 @@
   "description": "A lightweight scratchpad for Linux, inspired by Antinote",
   "type": "module",
   "main": "./out/main/index.js",
+  "author": "Hong Anh Pham",
   "license": "MIT",
   "scripts": {
     "dev": "electron-vite dev",
