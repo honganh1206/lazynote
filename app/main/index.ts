@@ -5,6 +5,7 @@ import icon from '../../resources/icon.png?asset'
 import { initStore } from './store'
 import { registerIpc } from './ipc'
 import { restoreGeometry, trackGeometry } from './window'
+import { registerShortcuts } from './shortcuts'
 
 function createWindow(): void {
   // Create the browser window.
@@ -31,6 +32,7 @@ function createWindow(): void {
   // Restore persisted position/size (if still on-screen), then keep tracking.
   restoreGeometry(mainWindow)
   trackGeometry(mainWindow)
+  registerShortcuts(mainWindow)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
