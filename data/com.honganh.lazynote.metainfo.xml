@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.honganh.lazynote</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Lazynote</name>
+  <summary>A lightweight native scratchpad</summary>
+  <description>
+    <p>
+      An always-accessible scratchpad for temporary notes, inspired by Antinote.
+      Frameless, translucent, always-on-top window with a todo mode (checkboxes,
+      headings, comments), clickable links, multiple notes, autosave to SQLite,
+      a system tray menu, and an Alt+A global toggle.
+    </p>
+  </description>
+  <launchable type="desktop-id">com.honganh.lazynote.desktop</launchable>
+  <provides>
+    <binary>lazynote</binary>
+  </provides>
+  <categories>
+    <category>Utility</category>
+    <category>TextEditor</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+</component>

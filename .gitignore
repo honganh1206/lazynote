@@ -1,12 +1,23 @@
-# Dependencies
-node_modules/
-
-# Build output
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
 dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 
-# Vite
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
+# Virtualenvs
+.venv/
+venv/
+
+# Packaging output
+*.deb
+*.AppImage
+.flatpak-builder/
+flatpak-repo/
 
 # Environment
 .env
@@ -23,4 +34,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Local planning notes (not versioned)
 tasks/

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Lazynote
+Comment=A lightweight native scratchpad
+Exec=lazynote
+Icon=com.honganh.lazynote
+Terminal=false
+Categories=Utility;TextEditor;
+StartupWMClass=Lazynote
