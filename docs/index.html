@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Antinote — A lightweight scratchpad for Linux</title>
-  <meta name="description" content="A lightweight, always-accessible scratchpad for Linux. Built with Tauri + Svelte.">
+  <title>Antinote - A lightweight scratchpad for Linux</title>
+  <meta name="description" content="A lightweight, always-accessible scratchpad for Linux.">
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,23 +17,12 @@
     }
 
     :root {
-      --bg: #FBF7F2;
-      --text: #2D2D2D;
-      --text-muted: #8C8580;
-      --accent: #D1A679;
-      --accent-hover: #C49462;
-      --btn-text: #FBF7F2;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #1A1816;
-        --text: #E8E2DB;
-        --text-muted: #7A756F;
-        --accent: #D1A679;
-        --accent-hover: #E0B98E;
-        --btn-text: #1A1816;
-      }
+      --bg: #0A0A0A;
+      --text: #F5F5F5;
+      --text-muted: #8A8A8A;
+      --accent: #F47C20;
+      --accent-hover: #FF9036;
+      --btn-text: #0A0A0A;
     }
 
     body {
@@ -42,13 +31,13 @@
       color: var(--text);
     }
 
-    /* Act 1 — Hero */
+    /* Act 1: Hero */
     .hero {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
+      min-height: 100dvh;
       padding: 2rem;
       gap: 1.25rem;
       animation: fadeIn 0.8s ease-out;
@@ -99,21 +88,7 @@
       font-size: 0.85rem;
     }
 
-    .scroll-hint {
-      margin-top: 2rem;
-      color: var(--text-muted);
-      font-size: 0.8rem;
-      letter-spacing: 0.05em;
-      opacity: 0.6;
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.4; transform: translateY(0); }
-      50% { opacity: 0.8; transform: translateY(4px); }
-    }
-
-    /* Act 2 — Demo */
+    /* Act 2: Demo */
     .demo-section {
       display: flex;
       flex-direction: column;
@@ -126,7 +101,8 @@
       max-width: 900px;
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+      border: 1px solid rgba(244, 124, 32, 0.15);
+      box-shadow: 0 8px 40px rgba(244, 124, 32, 0.08);
     }
 
     footer {
@@ -145,7 +121,14 @@
     }
 
     footer a:hover {
-      color: var(--text);
+      color: var(--accent);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
     }
   </style>
 </head>
@@ -156,8 +139,7 @@
     <h1>Antinote</h1>
     <p class="tagline">A lightweight scratchpad for Linux</p>
     <a href="https://github.com/honganh1206/antinote-linux/releases/latest" class="download">Download for Linux</a>
-    <p class="platform">.deb · .AppImage · .rpm</p>
-    <span class="scroll-hint">↓</span>
+    <p class="platform">.deb</p>
   </section>
 
   <!-- Act 2: Demo -->
