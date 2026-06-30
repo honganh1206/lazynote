@@ -12,7 +12,7 @@ MAX_SIZE = 32
 DEFAULT_SIZE = 15
 
 
-def _clamp_size(size: int | str | None) -> int:
+def clamp_size(size: int | str | None) -> int:
     try:
         n = int(size)
     except (TypeError, ValueError):
@@ -29,4 +29,4 @@ def resolve_font(
     `size` is parsed to int (DEFAULT_SIZE on bad input) and clamped to range.
     """
     fam = family if family and family in available else default_family
-    return {"family": fam, "size": _clamp_size(size)}
+    return {"family": fam, "size": clamp_size(size)}

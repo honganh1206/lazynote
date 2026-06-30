@@ -100,7 +100,7 @@ class Backend(QObject):
         s = store.get_settings()
         if family:
             s.set("font_family", family)
-        s.set("font_size", str(fonts._clamp_size(size)))
+        s.set("font_size", str(fonts.clamp_size(size)))
         self.fontChanged.emit()
 
     # ---- properties ----
