@@ -62,10 +62,10 @@
     position: absolute;
     top: calc(16px + 0.75rem + 1lh);
     left: 1.75rem;
-    background: #ffffff;
-    border: 1px solid #e0dcd7;
+    background: #2a2b2f;
+    border: 1px solid #3a3b40;
     border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     padding: 4px;
     z-index: 10;
     min-width: 200px;
@@ -82,11 +82,11 @@
     cursor: pointer;
     font-family: inherit;
     font-size: 14px;
-    color: #2c2c2c;
+    color: #d6d3cc;
     text-align: left;
   }
   .picker-item.selected {
-    background: #f0ece7;
+    background: #34363b;
   }
   .keyword-name {
     font-weight: 600;

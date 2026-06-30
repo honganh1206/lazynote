@@ -98,7 +98,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: #faf8f5;
+    background: #1f2023;
     border-radius: 10px;
     overflow: hidden;
   }
@@ -118,7 +118,7 @@
     bottom: 8px;
     right: 12px;
     font-size: 11px;
-    color: #b0a99f;
+    color: #6f6b64;
     user-select: none;
     pointer-events: none;
   }

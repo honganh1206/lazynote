@@ -1,16 +1,31 @@
 import { EditorView } from '@codemirror/view'
 
 /**
- * Light theme reproducing the original Antinote look. Colors and metrics are
- * eyeballed-to-parity, not pixel-exact. Checklist lines use a hanging indent so
+ * Antinote-style dark theme (first pass). Warm charcoal panel, off-white text,
+ * muted warm accents. Colors are an interpretation of Antinote's dark look, not
+ * sampled pixel-exact — tune to taste. Checklist lines use a hanging indent so
  * the ☐/☑ widget (rendered by decorations.ts as `.cm-checkbox`) sits in a
  * gutter-like space to the left of the wrapped text.
+ *
+ * Palette (single source of truth — change here):
+ *   panel    #1f2023   bg
+ *   text     #d6d3cc   default foreground
+ *   muted    #6f6b64   comments / keyword line / checked
+ *   sel      #34363b   selection
+ *   amber    #e6a86b   h1
+ *   green    #84c08a   h2
+ *   blue     #79b8e0   h3 / links
  */
+const PANEL = '#1f2023'
+const TEXT = '#d6d3cc'
+const MUTED = '#6f6b64'
+const SEL = '#34363b'
+
 export const antinoteTheme = EditorView.theme(
   {
     '&': {
-      backgroundColor: '#faf8f5',
-      color: '#2c2c2c',
+      backgroundColor: PANEL,
+      color: TEXT,
       fontFamily: 'system-ui, -apple-system, sans-serif',
       fontSize: '15px',
       height: '100%',
@@ -25,7 +40,7 @@ export const antinoteTheme = EditorView.theme(
     },
     '.cm-content': {
       padding: '0.75rem 1.25rem',
-      caretColor: '#2c2c2c',
+      caretColor: TEXT,
     },
     // Hanging indent: wrapped text and checklist glyphs align with a left gutter.
     '.cm-line': {
@@ -33,33 +48,33 @@ export const antinoteTheme = EditorView.theme(
       textIndent: '-1.4em',
     },
     '.cm-cursor, .cm-dropCursor': {
-      borderLeftColor: '#2c2c2c',
+      borderLeftColor: TEXT,
     },
     '&.cm-focused': {
       outline: 'none',
     },
     '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection': {
-      backgroundColor: '#e8e1d6',
+      backgroundColor: SEL,
     },
-    // Heading colors.
-    '.cm-h1': { color: '#d45d00' },
-    '.cm-h2': { color: '#2e8b57' },
-    '.cm-h3': { color: '#5a7ec2' },
+    // Heading colors (warm amber / green / blue).
+    '.cm-h1': { color: '#e6a86b' },
+    '.cm-h2': { color: '#84c08a' },
+    '.cm-h3': { color: '#79b8e0' },
     // Muted syntax.
-    '.cm-comment': { color: '#b0a99f', fontStyle: 'italic' },
-    '.cm-keyword': { color: '#b0a99f' },
-    '.cm-checked': { color: '#b0a99f', textDecoration: 'line-through' },
+    '.cm-comment': { color: MUTED, fontStyle: 'italic' },
+    '.cm-keyword': { color: MUTED },
+    '.cm-checked': { color: MUTED, textDecoration: 'line-through' },
     // Links.
-    '.cm-link': { color: '#5a7ec2', cursor: 'pointer' },
+    '.cm-link': { color: '#79b8e0', cursor: 'pointer' },
     '.cm-link:hover': { textDecoration: 'underline' },
     // Checkbox widgets (☑/☐) rendered with class `cm-checkbox` by decorations.ts.
     '.cm-checkbox': {
-      color: '#b0a99f',
+      color: MUTED,
       // Reserve space matching the hanging indent so the glyph sits in the gutter.
       display: 'inline-block',
       width: '1.4em',
       textIndent: '0',
     },
   },
-  { dark: false },
+  { dark: true },
 )
