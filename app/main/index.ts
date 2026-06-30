@@ -8,14 +8,22 @@ import { registerIpc } from './ipc'
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 400,
+    height: 400,
+    minWidth: 360,
+    minHeight: 360,
     show: false,
+    frame: false,
+    transparent: true,
+    resizable: true,
+    alwaysOnTop: true,
+    backgroundColor: '#00000000',
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      contextIsolation: true
     }
   })
 
