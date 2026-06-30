@@ -19,6 +19,7 @@ Item {
     // ---- palette ----
     readonly property color colText: backend ? backend.colors.text : "#d6d3cc"
     readonly property color colMuted: backend ? backend.colors.muted : "#6f6b64"
+    readonly property var fnt: backend ? backend.font : ({family: "", size: 15})
 
     // ---- document state (source of truth) ----
     property string docText: ""
@@ -180,7 +181,8 @@ Item {
                 x: 0
                 text: row.checkbox === "checked" ? "☑" : "☐"
                 color: row.checkbox === "checked" ? root.colMuted : root.colText
-                font.pixelSize: 15
+                font.family: root.fnt.family
+                font.pixelSize: root.fnt.size
 
                 // Animate the check toggle.
                 Behavior on text { SequentialAnimation {
@@ -207,7 +209,8 @@ Item {
                 anchors.verticalCenter: row.verticalCenter
                 wrapMode: Text.Wrap
                 textFormat: Text.RichText
-                font.pixelSize: 15
+                font.family: root.fnt.family
+                font.pixelSize: root.fnt.size
                 color: root.colText
                 text: row.buildHtml(row.lineData)
                 onLinkActivated: function (url) { backend.open_url(url) }
@@ -254,7 +257,8 @@ Item {
                     color: root.colText
                     selectionColor: backend ? backend.colors.selection : "#34363b"
                     selectByMouse: true
-                    font.pixelSize: 15
+                    font.family: root.fnt.family
+                    font.pixelSize: root.fnt.size
                     verticalAlignment: TextInput.AlignVCenter
 
                     function takeFocus(col) {
