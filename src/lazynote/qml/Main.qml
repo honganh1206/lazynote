@@ -76,23 +76,22 @@ ApplicationWindow {
             }
             Platform.MenuItem { text: "Toggle Auto-hide"; onTriggered: backend.toggle_auto_hide() }
             Platform.MenuSeparator {}
-            Platform.Menu {
-                title: "Theme"
-                Platform.MenuItem {
-                    text: "System"; checkable: true
-                    checked: backend && backend.theme === "system"
-                    onTriggered: backend.set_theme("system")
-                }
-                Platform.MenuItem {
-                    text: "Light"; checkable: true
-                    checked: backend && backend.theme === "light"
-                    onTriggered: backend.set_theme("light")
-                }
-                Platform.MenuItem {
-                    text: "Dark"; checkable: true
-                    checked: backend && backend.theme === "dark"
-                    onTriggered: backend.set_theme("dark")
-                }
+            // Theme items are flat (not a submenu): Qt.labs.platform's DBus tray
+            // menu corrupts the heap when a nested Menu sits between separators.
+            Platform.MenuItem {
+                text: "Theme: System"; checkable: true
+                checked: backend && backend.theme === "system"
+                onTriggered: backend.set_theme("system")
+            }
+            Platform.MenuItem {
+                text: "Theme: Light"; checkable: true
+                checked: backend && backend.theme === "light"
+                onTriggered: backend.set_theme("light")
+            }
+            Platform.MenuItem {
+                text: "Theme: Dark"; checkable: true
+                checked: backend && backend.theme === "dark"
+                onTriggered: backend.set_theme("dark")
             }
             Platform.MenuSeparator {}
             Platform.MenuItem { text: "Quit"; onTriggered: { backend.flush(); Qt.quit() } }
