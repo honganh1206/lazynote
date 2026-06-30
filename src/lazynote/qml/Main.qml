@@ -94,6 +94,11 @@ ApplicationWindow {
                 onTriggered: backend.set_theme("dark")
             }
             Platform.MenuSeparator {}
+            Platform.MenuItem {
+                text: "Settings…"
+                onTriggered: { win.show(); win.raise(); win.requestActivate(); settings.open() }
+            }
+            Platform.MenuSeparator {}
             Platform.MenuItem { text: "Quit"; onTriggered: { backend.flush(); Qt.quit() } }
         }
     }
@@ -102,6 +107,7 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+L"; onActivated: backend.navigate(1) }
     Shortcut { sequence: "Ctrl+N"; onActivated: backend.new_note() }
     Shortcut { sequence: "Ctrl+D"; onActivated: backend.delete_current() }
+    Shortcut { sequence: "Ctrl+,"; onActivated: settings.open() }
 
     Rectangle {
         id: panel
@@ -165,6 +171,10 @@ ApplicationWindow {
             close()
             editor.focusEditor()
         }
+    }
+
+    SettingsPopup {
+        id: settings
     }
 
     Component.onCompleted: {
