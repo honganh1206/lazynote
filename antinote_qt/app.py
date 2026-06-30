@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QApplication
 
 from antinote_qt import store
 from antinote_qt.bridge import Backend
+from antinote_qt.shortcuts import GlobalShortcut
 
 QML_DIR = Path(__file__).parent / "qml"
 
@@ -29,11 +30,22 @@ def create_engine(app: QGuiApplication) -> QQmlApplicationEngine:
     engine = QQmlApplicationEngine()
     backend = Backend()
     engine.rootContext().setContextProperty("backend", backend)
+
+    shortcut = GlobalShortcut()
+    shortcut.activated.connect(backend.request_toggle)
+    if not shortcut.start():
+        print(
+            "[shortcuts] global Alt+A unavailable (Wayland without portal, or no X11) "
+            "- use the tray to show/hide",
+            file=sys.stderr,
+        )
+
     engine.load(str(QML_DIR / "Main.qml"))
     if not engine.rootObjects():
         raise RuntimeError("Failed to load Main.qml")
     # Keep references so they aren't garbage-collected.
     engine._backend = backend  # type: ignore[attr-defined]
+    engine._shortcut = shortcut  # type: ignore[attr-defined]
     return engine
 
 

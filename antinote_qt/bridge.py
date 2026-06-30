@@ -23,6 +23,7 @@ class Backend(QObject):
     contentChanged = Signal()
     statusChanged = Signal()
     autoHideChanged = Signal(bool)
+    toggleWindowRequested = Signal()
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -128,6 +129,11 @@ class Backend(QObject):
     @Slot(str)
     def open_url(self, url: str) -> None:
         QDesktopServices.openUrl(QUrl(url))
+
+    @Slot()
+    def request_toggle(self) -> None:
+        # Called from the global-shortcut thread (queued onto the GUI thread).
+        self.toggleWindowRequested.emit()
 
     # ---- editor highlighting (Option A) ----
     @Slot(QQuickTextDocument)

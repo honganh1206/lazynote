@@ -16,6 +16,11 @@ ApplicationWindow {
     property bool slashActive: backend && backend.content.split("\n")[0] === "/"
     onSlashActiveChanged: slashActive ? picker.open() : picker.close()
 
+    Connections {
+        target: backend
+        function onToggleWindowRequested() { win.toggleVisible() }
+    }
+
     function toggleVisible() {
         if (win.visible) {
             win.hide()
