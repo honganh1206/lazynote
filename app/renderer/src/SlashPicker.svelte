@@ -9,30 +9,40 @@
   const keywords: readonly string[] = REGISTERED_KEYWORDS;
   let selectedIndex = $state(0);
 
+  // Consume a key the picker handles: prevent the default and stop it reaching
+  // CodeMirror. Runs in the capture phase (see onkeydowncapture below) so the
+  // editor never also acts on Enter/arrows while the picker is open.
+  function consume(event: KeyboardEvent) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === "ArrowDown") {
-      event.preventDefault();
+      consume(event);
       selectedIndex = (selectedIndex + 1) % keywords.length;
     } else if (event.key === "ArrowUp") {
-      event.preventDefault();
+      consume(event);
       selectedIndex = (selectedIndex - 1 + keywords.length) % keywords.length;
     } else if (event.key === "Enter") {
-      event.preventDefault();
+      consume(event);
       onselect(keywords[selectedIndex]);
     } else if (event.key === "Escape") {
-      event.preventDefault();
+      consume(event);
       ondismiss();
     } else {
       const num = parseInt(event.key);
       if (!isNaN(num) && num >= 1 && num <= keywords.length) {
-        event.preventDefault();
+        consume(event);
         onselect(keywords[num - 1]);
       }
+      // Any other key falls through to the editor — typing past the lone "/"
+      // changes the first line and hides the picker.
     }
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydowncapture={handleKeydown} />
 
 <div class="slash-picker">
   {#each keywords as kw, i}
