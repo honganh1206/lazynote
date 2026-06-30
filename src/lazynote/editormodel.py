@@ -17,24 +17,25 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from lazynote.highlight import compute_ranges
+from lazynote.theme import PALETTES
 
-# Dark palette — the editor theme.
-TEXT = "#d6d3cc"
-MUTED = "#6f6b64"
-AMBER = "#e6a86b"
-GREEN = "#84c08a"
-BLUE = "#79b8e0"
+# Legacy module-level constants (dark) kept for back-compat with existing imports.
+TEXT = PALETTES["dark"]["text"]
+MUTED = PALETTES["dark"]["muted"]
+AMBER = PALETTES["dark"]["amber"]
+GREEN = PALETTES["dark"]["green"]
+BLUE = PALETTES["dark"]["blue"]
 
-# Per-kind base style: (color, italic, strike). Hiding and links are handled
-# separately because they are character-level, not line-level.
+# Per-kind base style: (palette_key, italic, strike). Hiding and links are
+# handled separately because they are character-level, not line-level.
 _KIND_STYLE: dict[str, tuple[str, bool, bool]] = {
-    "heading1": (AMBER, False, False),
-    "heading2": (GREEN, False, False),
-    "heading3": (BLUE, False, False),
-    "comment": (MUTED, True, False),
-    "keyword": (MUTED, False, False),
-    "checkbox_checked": (MUTED, False, True),
-    "checkbox_unchecked": (TEXT, False, False),
+    "heading1": ("amber", False, False),
+    "heading2": ("green", False, False),
+    "heading3": ("blue", False, False),
+    "comment": ("muted", True, False),
+    "keyword": ("muted", False, False),
+    "checkbox_checked": ("muted", False, True),
+    "checkbox_unchecked": ("text", False, False),
 }
 
 
@@ -65,12 +66,17 @@ def _line_bounds(doc: str, line_index: int) -> tuple[int, int] | None:
     return None
 
 
-def line_render_spans(doc: str, line_index: int, cursor_line: int) -> LineRender:
+def line_render_spans(
+    doc: str, line_index: int, cursor_line: int, palette: dict | None = None
+) -> LineRender:
     """Project compute_ranges onto a single line as styled character spans.
 
     `cursor_line` is forwarded to compute_ranges so the checked-item reveal on the
-    caret's line matches the spec exactly.
+    caret's line matches the spec exactly. `palette` maps style keys to hex colors
+    (defaults to the dark palette for back-compat).
     """
+    if palette is None:
+        palette = PALETTES["dark"]
     bounds = _line_bounds(doc, line_index)
     if bounds is None:
         return LineRender()
@@ -83,7 +89,7 @@ def line_render_spans(doc: str, line_index: int, cursor_line: int) -> LineRender
     ranges = [r for r in compute_ranges(doc, cursor_line) if r.from_ < end and r.to > start]
 
     # Per-character attribute arrays, seeded with defaults.
-    colors = [TEXT] * n
+    colors = [palette["text"]] * n
     italics = [False] * n
     strikes = [False] * n
     hidden = [False] * n
@@ -105,13 +111,14 @@ def line_render_spans(doc: str, line_index: int, cursor_line: int) -> LineRender
         if r.kind == "link":
             for i in range(lo, hi):
                 links[i] = True
-                colors[i] = BLUE
+                colors[i] = palette["blue"]
             continue
 
         style = _KIND_STYLE.get(r.kind)
         if style is None:
             continue
-        color, italic, strike = style
+        key, italic, strike = style
+        color = palette[key]
         for i in range(lo, hi):
             colors[i] = color
             italics[i] = italic
