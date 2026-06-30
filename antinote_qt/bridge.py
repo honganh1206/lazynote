@@ -6,11 +6,14 @@ QML reads `content`/`index`/`count`/`mode` properties and calls the slots.
 
 from __future__ import annotations
 
+import json
+
 from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QDesktopServices, QGuiApplication
 from PySide6.QtQuick import QQuickTextDocument
 
 from antinote_qt import store
+from antinote_qt.geometry import Geometry, is_on_screen, parse_geometry
 from antinote_qt.highlight import compute_ranges
 from antinote_qt.highlighter import SyntaxHighlighter
 from antinote_qt.notestate import NoteState
@@ -114,6 +117,24 @@ class Backend(QObject):
     @Slot(str, str)
     def setting_set(self, key: str, value: str) -> None:
         store.get_settings().set(key, value)
+
+    @Slot(int, int, int, int)
+    def save_geometry(self, x: int, y: int, w: int, h: int) -> None:
+        store.get_settings().set(
+            "window_geometry", json.dumps({"x": x, "y": y, "width": w, "height": h})
+        )
+
+    @Slot(result="QVariantList")
+    def restore_geometry(self) -> list:
+        """Return [x, y, w, h] if a saved geometry is still on a connected screen, else []."""
+        g = parse_geometry(store.get_settings().get("window_geometry"))
+        if g is None:
+            return []
+        for screen in QGuiApplication.screens():
+            r = screen.availableGeometry()
+            if is_on_screen(g, Geometry(r.x(), r.y(), r.width(), r.height())):
+                return [g.x, g.y, g.width, g.height]
+        return []
 
     @Slot(result=bool)
     def auto_hide_enabled(self) -> bool:

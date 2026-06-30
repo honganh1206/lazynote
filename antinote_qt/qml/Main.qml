@@ -21,6 +21,29 @@ ApplicationWindow {
         function onToggleWindowRequested() { win.toggleVisible() }
     }
 
+    // Persist geometry (debounced). `restored` suppresses saves during startup restore.
+    property bool restored: false
+    Timer {
+        id: geoSaveTimer
+        interval: 500
+        onTriggered: if (win.restored) backend.save_geometry(win.x, win.y, win.width, win.height)
+    }
+    onXChanged: geoSaveTimer.restart()
+    onYChanged: geoSaveTimer.restart()
+    onWidthChanged: geoSaveTimer.restart()
+    onHeightChanged: geoSaveTimer.restart()
+
+    // Auto-hide on blur (when enabled in settings).
+    Timer { id: autoHideTimer; interval: 300; onTriggered: win.hide() }
+    onActiveChanged: {
+        if (!active) {
+            backend.flush()
+            if (backend.auto_hide_enabled()) autoHideTimer.restart()
+        } else {
+            autoHideTimer.stop()
+        }
+    }
+
     function toggleVisible() {
         if (win.visible) {
             win.hide()
@@ -130,6 +153,11 @@ ApplicationWindow {
         backend.load()
         var aot = backend.setting_get("always_on_top") !== "false"
         win.flags = Qt.Window | Qt.FramelessWindowHint | (aot ? Qt.WindowStaysOnTopHint : 0)
+        var geo = backend.restore_geometry()
+        if (geo.length === 4) {
+            win.x = geo[0]; win.y = geo[1]; win.width = geo[2]; win.height = geo[3]
+        }
+        win.restored = true
         editor.focusEditor()
     }
 }
