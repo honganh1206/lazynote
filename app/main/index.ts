@@ -6,6 +6,7 @@ import { initStore } from './store'
 import { registerIpc } from './ipc'
 import { restoreGeometry, trackGeometry } from './window'
 import { registerShortcuts } from './shortcuts'
+import { createTray } from './tray'
 
 function createWindow(): void {
   // Create the browser window.
@@ -33,6 +34,7 @@ function createWindow(): void {
   restoreGeometry(mainWindow)
   trackGeometry(mainWindow)
   registerShortcuts(mainWindow)
+  createTray(mainWindow, icon)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
