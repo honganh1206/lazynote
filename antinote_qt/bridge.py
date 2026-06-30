@@ -14,7 +14,7 @@ from antinote_qt import store
 from antinote_qt.highlight import compute_ranges
 from antinote_qt.highlighter import SyntaxHighlighter
 from antinote_qt.notestate import NoteState
-from antinote_qt.parse.mode import detect_mode
+from antinote_qt.parse.mode import REGISTERED_KEYWORDS, detect_mode
 
 SAVE_DEBOUNCE_MS = 500
 
@@ -53,6 +53,11 @@ class Backend(QObject):
         return m["keyword"] if m else ""
 
     mode = Property(str, _mode, notify=contentChanged)
+
+    def _keywords(self) -> list:
+        return list(REGISTERED_KEYWORDS)
+
+    keywords = Property("QStringList", _keywords, constant=True)
 
     # ---- slots ----
     @Slot()

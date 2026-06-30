@@ -7,6 +7,8 @@ ScrollView {
     id: root
     clip: true
 
+    function focusEditor() { area.forceActiveFocus() }
+
     TextArea {
         id: area
         wrapMode: TextArea.Wrap
