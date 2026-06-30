@@ -37,6 +37,12 @@ def init_store() -> None:
         for legacy in _LEGACY_DB_PATHS:
             if legacy.exists():
                 shutil.copyfile(legacy, db_path)
+                # Bring the WAL sidecars too, so notes not yet checkpointed into
+                # the main file are preserved.
+                for suffix in ("-wal", "-shm"):
+                    side = legacy.with_name(legacy.name + suffix)
+                    if side.exists():
+                        shutil.copyfile(side, db_path.with_name(db_path.name + suffix))
                 break
     conn = open_db(str(db_path))
     _notes = NotesRepo(conn)
