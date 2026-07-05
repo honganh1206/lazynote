@@ -11,7 +11,7 @@ import json
 from PySide6.QtCore import Property, Qt, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QFontDatabase, QFontInfo, QGuiApplication
 
-from lazynote import fonts, store, theme
+from lazynote import fonts, obsidian, store, theme
 from lazynote.editormodel import line_render_spans
 from lazynote.geometry import Geometry, is_on_screen, parse_geometry
 from lazynote.notestate import NoteState
@@ -63,6 +63,11 @@ class Backend(QObject):
 
     theme = Property(str, _theme, notify=themeChanged)
 
+    def _effective_scheme(self) -> str:
+        return theme.resolve_scheme(self._theme_mode(), self._os_scheme())
+
+    effectiveScheme = Property(str, _effective_scheme, notify=themeChanged)
+
     def _colors(self) -> dict:
         return theme.palette_for(self._theme_mode(), self._os_scheme())
 
@@ -73,6 +78,18 @@ class Backend(QObject):
         if mode not in ("system", "light", "dark"):
             return
         store.get_settings().set("theme", mode)
+        self.themeChanged.emit()
+        self.contentChanged.emit()
+
+    @Slot()
+    def toggle_theme(self) -> None:
+        """Flip light ↔ dark based on the currently effective scheme.
+
+        Switches to the opposite of whatever the user is effectively seeing, so
+        the toggle works from "system" mode too (it picks an explicit override).
+        """
+        new = "light" if self._effective_scheme() == "dark" else "dark"
+        store.get_settings().set("theme", new)
         self.themeChanged.emit()
         self.contentChanged.emit()
 
@@ -225,6 +242,19 @@ class Backend(QObject):
 
     @Slot(str)
     def open_url(self, url: str) -> None:
+        QDesktopServices.openUrl(QUrl(url))
+
+    @Slot()
+    def export_obsidian(self) -> None:
+        """Export the current note as a new note in the user's last-focused Obsidian vault.
+
+        Flushes any pending edit so the exported body matches what's on screen, then
+        opens an `obsidian://new?name=...&content=...` URI. Obsidian creates the note
+        in its default new-note location of that vault.
+        """
+        self.flush()
+        name = obsidian.derive_note_name(self._state.content)
+        url = obsidian.build_new_note_url(name, self._state.content)
         QDesktopServices.openUrl(QUrl(url))
 
     @Slot()

@@ -56,6 +56,34 @@ def test_set_theme_dark(tmp_path, monkeypatch):
     assert b.property("colors")["bg"] == "#1f2023"
 
 
+def test_effective_scheme_follows_explicit_mode(tmp_path, monkeypatch):
+    b = _make_backend(tmp_path, monkeypatch)
+    # Offscreen OS scheme resolves to "dark", so system → dark.
+    assert b.property("effectiveScheme") == "dark"
+    b.set_theme("light")
+    assert b.property("effectiveScheme") == "light"
+    b.set_theme("dark")
+    assert b.property("effectiveScheme") == "dark"
+
+
+def test_toggle_theme_from_system_picks_opposite_of_effective(tmp_path, monkeypatch):
+    b = _make_backend(tmp_path, monkeypatch)
+    # Default theme is "system"; offscreen OS scheme resolves to "dark",
+    # so the first toggle flips to "light" (an explicit override).
+    b.toggle_theme()
+    assert b.property("theme") == "light"
+    assert b.property("effectiveScheme") == "light"
+
+
+def test_toggle_theme_flips_light_and_dark(tmp_path, monkeypatch):
+    b = _make_backend(tmp_path, monkeypatch)
+    b.set_theme("light")
+    b.toggle_theme()
+    assert b.property("theme") == "dark"
+    b.toggle_theme()
+    assert b.property("theme") == "light"
+
+
 def test_backend_slash_and_mode(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")

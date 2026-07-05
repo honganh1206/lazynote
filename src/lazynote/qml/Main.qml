@@ -121,7 +121,9 @@ ApplicationWindow {
             color: "transparent"
             anchors { left: parent.left; right: parent.right; top: parent.top }
             MouseArea {
+                id: dragMouse
                 anchors.fill: parent
+                hoverEnabled: true
                 cursorShape: Qt.OpenHandCursor
                 onPressed: win.startSystemMove()
             }
@@ -136,6 +138,103 @@ ApplicationWindow {
             }
         }
 
+        // Hover-revealed top-edge controls, sharing the export button's reveal
+        // idiom: hovering the drag strip reveals them; each button's own hit area
+        // keeps the zone "hovered" while the cursor is on it. Buttons are disabled
+        // when not revealed so clicks pass through to the drag strip for window
+        // moving (no accidental close while dragging from a corner).
+        Item {
+            id: topZone
+            anchors { left: panel.left; right: panel.right; top: panel.top }
+            height: 28
+
+            readonly property bool hovered:
+                dragMouse.containsMouse
+                || themeBtnArea.containsMouse
+                || hideBtnArea.containsMouse
+                || closeBtnArea.containsMouse
+
+            function revealColor(base) {
+                // Slightly brighter than the muted rest color so an active glyph reads.
+                return backend ? backend.colors.text : base
+            }
+
+            // ---- theme toggle (top-left) ----
+            MouseArea {
+                id: themeBtnArea
+                x: 4
+                y: 0
+                width: 28
+                height: 28
+                enabled: topZone.hovered
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: backend.toggle_theme()
+            }
+            Text {
+                text: backend && backend.effectiveScheme === "dark" ? "☾" : "☀"
+                color: topZone.revealColor("#d6d3cc")
+                font.pixelSize: 15
+                x: 12
+                y: 6 + (topZone.hovered ? 0 : -8)
+                opacity: topZone.hovered ? 1.0 : 0.0
+                visible: opacity > 0.01
+                Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+            }
+
+            // ---- close (rightmost) ----
+            MouseArea {
+                id: closeBtnArea
+                anchors { right: parent.right; top: parent.top; rightMargin: 2; topMargin: 0 }
+                width: 28
+                height: 28
+                enabled: topZone.hovered
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: { backend.flush(); Qt.quit() }
+            }
+            Text {
+                text: "✕"
+                color: closeBtnArea.containsMouse
+                       ? "#e06c6c"   // danger red on hover, the standard close affordance
+                       : (backend ? backend.colors.text : "#d6d3cc")
+                font.pixelSize: 14
+                anchors.right: parent.right
+                anchors.rightMargin: 11
+                y: 6 + (topZone.hovered ? 0 : -8)
+                opacity: topZone.hovered ? 1.0 : 0.0
+                visible: opacity > 0.01
+                Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                Behavior on color { ColorAnimation { duration: 120 } }
+            }
+
+            // ---- hide (just left of close) ----
+            MouseArea {
+                id: hideBtnArea
+                anchors { right: closeBtnArea.left; top: parent.top; rightMargin: 0; topMargin: 0 }
+                width: 28
+                height: 28
+                enabled: topZone.hovered
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: win.hide()
+            }
+            Text {
+                text: "–"
+                color: topZone.revealColor("#d6d3cc")
+                font.pixelSize: 18
+                anchors.right: closeBtnArea.left
+                anchors.rightMargin: 7
+                y: 2 + (topZone.hovered ? 0 : -8)
+                opacity: topZone.hovered ? 1.0 : 0.0
+                visible: opacity > 0.01
+                Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+            }
+        }
+
         Text {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
@@ -146,6 +245,52 @@ ApplicationWindow {
             text: backend
                   ? (backend.mode ? backend.mode + " · " : "") + (backend.index + 1) + "/" + backend.count
                   : ""
+        }
+
+        // Hover-revealed "Export to Obsidian" icon at the lower-left corner.
+        // A thin trigger strip at the very bottom reveals the glyph; the icon's
+        // own hit area keeps it visible while the cursor is on it. ↗ is the
+        // conventional "export / open externally" arrow; pure glyph — no pill.
+        Item {
+            id: exportZone
+            anchors { left: panel.left; right: panel.right; bottom: panel.bottom }
+            height: 34
+
+            // Trigger strip hugging the lower edge (full width).
+            MouseArea {
+                id: exportStrip
+                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                height: 10
+                hoverEnabled: true
+            }
+
+            readonly property bool hovered: exportStrip.containsMouse || exportBtnArea.containsMouse
+
+            // Invisible hit target around the glyph (≈32px so it's easily clickable).
+            MouseArea {
+                id: exportBtnArea
+                x: 4
+                y: exportZone.height - 32
+                width: 32
+                height: 32
+                enabled: exportZone.hovered
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: backend.export_obsidian()
+            }
+
+            Text {
+                id: exportIcon
+                text: "↗"
+                color: backend ? backend.colors.text : "#d6d3cc"
+                font.pixelSize: 15
+                x: 12
+                y: exportZone.height - 22 + (exportZone.hovered ? 0 : 8)
+                opacity: exportZone.hovered ? 1.0 : 0.0
+                visible: opacity > 0.01
+                Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+            }
         }
 
         // Bottom-right resize grip (frameless windows have no system grips).
