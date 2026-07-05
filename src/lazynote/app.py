@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import signal
 import sys
+import os
 from pathlib import Path
 
 from PySide6.QtCore import QTimer
@@ -52,6 +53,7 @@ def create_engine(app: QGuiApplication) -> QQmlApplicationEngine:
 
 
 def main() -> int:
+    os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Basic")
     app = QApplication(sys.argv)
     app.setApplicationName("Lazynote")
     app.setOrganizationName("lazynote")
