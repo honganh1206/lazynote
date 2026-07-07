@@ -34,7 +34,7 @@ def _emit_links(ranges: list[Range], line: str, line_start: int) -> None:
         local += len(seg.value)
 
 
-def compute_ranges(doc: str, sel_head_line: int) -> list[Range]:
+def compute_ranges(doc: str, sel_head_line: int, hyperlink_features: bool = True) -> list[Range]:
     mode = detect_mode(doc)
     is_todo = bool(mode and mode["keyword"] == "todo")
 
@@ -56,13 +56,15 @@ def compute_ranges(doc: str, sel_head_line: int) -> list[Range]:
         m = _HEADING_RE.match(line)
         if m:
             ranges.append(Range(line_start, line_end, f"heading{len(m.group(1))}"))
-            _emit_links(ranges, line, line_start)
+            if hyperlink_features:
+                _emit_links(ranges, line, line_start)
             continue
 
         if is_todo:
             if line.startswith("//"):
                 ranges.append(Range(line_start, line_end, "comment"))
-                _emit_links(ranges, line, line_start)
+                if hyperlink_features:
+                    _emit_links(ranges, line, line_start)
                 continue
             if line.endswith("/x"):
                 if sel_head_line == i:
@@ -71,13 +73,16 @@ def compute_ranges(doc: str, sel_head_line: int) -> list[Range]:
                 else:
                     ranges.append(Range(line_start, line_end, "checkbox_checked"))
                     ranges.append(Range(line_end - 2, line_end, "hide_x"))
-                _emit_links(ranges, line, line_start)
+                if hyperlink_features:
+                    _emit_links(ranges, line, line_start)
                 continue
             ranges.append(Range(line_start, line_end, "checkbox_unchecked"))
-            _emit_links(ranges, line, line_start)
+            if hyperlink_features:
+                _emit_links(ranges, line, line_start)
             continue
 
         # Plain mode, non-heading line.
-        _emit_links(ranges, line, line_start)
+        if hyperlink_features:
+            _emit_links(ranges, line, line_start)
 
     return ranges

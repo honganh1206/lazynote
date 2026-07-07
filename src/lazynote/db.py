@@ -42,7 +42,12 @@ def open_db(path: str) -> sqlite3.Connection:
     )
     conn.executemany(
         "INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)",
-        [("auto_create_note_on_launch", "true"), ("always_on_top", "true")],
+        [
+            ("auto_create_note_on_launch", "true"),
+            ("always_on_top", "true"),
+            ("link_shortening", "true"),
+            ("hyperlink_features", "true"),
+        ],
     )
     conn.commit()
     return conn

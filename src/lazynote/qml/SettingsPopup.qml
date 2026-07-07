@@ -127,5 +127,55 @@ Popup {
                 }
             }
         }
+
+        Text {
+            text: "Links"
+            color: backend ? backend.colors.muted : "#6f6b64"
+            font.pixelSize: 12
+        }
+
+        ColumnLayout {
+            spacing: 6
+
+            CheckBox {
+                id: shorteningBox
+                text: "Shorten links"
+                checked: backend ? backend.setting_get("link_shortening") !== "false" : true
+                onCheckedChanged: backend.setting_set("link_shortening", checked ? "true" : "false")
+
+                contentItem: Text {
+                    leftPadding: shorteningBox.indicator.width + shorteningBox.spacing
+                    text: shorteningBox.text
+                    color: backend ? backend.colors.text : "#d6d3cc"
+                    font.pixelSize: 13
+                    verticalAlignment: Text.AlignVCenter
+                }
+                indicator.width: 16
+                indicator.height: 16
+            }
+
+            CheckBox {
+                id: hyperlinkBox
+                text: "Enable link features"
+                checked: backend ? backend.setting_get("hyperlink_features") !== "false" : true
+                onCheckedChanged: backend.setting_set("hyperlink_features", checked ? "true" : "false")
+
+                contentItem: Text {
+                    leftPadding: hyperlinkBox.indicator.width + hyperlinkBox.spacing
+                    text: hyperlinkBox.text
+                    color: backend ? backend.colors.text : "#d6d3cc"
+                    font.pixelSize: 13
+                    verticalAlignment: Text.AlignVCenter
+                }
+                indicator.width: 16
+                indicator.height: 16
+            }
+
+            Text {
+                text: "Ctrl+Click opens · Ctrl+Shift+Click expands"
+                color: backend ? backend.colors.muted : "#6f6b64"
+                font.pixelSize: 11
+            }
+        }
     }
 }

@@ -1,4 +1,4 @@
-from lazynote.parse.links import LinkSegment, parse_links
+from lazynote.parse.links import LinkSegment, link_occurrence_by_offset, parse_links
 
 
 def test_plain_text_single_segment():
@@ -20,3 +20,20 @@ def test_keeps_url_inside_balanced_parens():
 
 def test_empty_string_returns_empty():
     assert parse_links("") == []
+
+
+def test_occurrence_by_offset_single_url():
+    doc = "see https://example.com now"
+    assert link_occurrence_by_offset(doc) == {4: 1}
+
+
+def test_occurrence_by_offset_duplicates_in_order():
+    url = "https://example.com/a/b/c"
+    doc = f"{url}\n{url}\n{url}"
+    occ = link_occurrence_by_offset(doc)
+    assert occ == {0: 1, len(url) + 1: 2, 2 * (len(url) + 1): 3}
+
+
+def test_occurrence_by_offset_distinct_urls_each_first():
+    doc = "https://a.com and https://b.com"
+    assert link_occurrence_by_offset(doc) == {0: 1, 18: 1}

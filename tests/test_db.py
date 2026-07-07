@@ -30,6 +30,8 @@ def test_deletes_a_note(tmp_path):
 def test_settings_seed_defaults_and_round_trip(tmp_path):
     s = SettingsRepo(fresh(tmp_path))
     assert s.get("always_on_top") == "true"
+    assert s.get("link_shortening") == "true"
+    assert s.get("hyperlink_features") == "true"
     s.set("always_on_top", "false")
     assert s.get("always_on_top") == "false"
 

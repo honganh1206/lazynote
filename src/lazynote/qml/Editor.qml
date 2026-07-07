@@ -122,6 +122,7 @@ Item {
     Connections {
         target: backend
         function onThemeChanged() { root.bumpVersion() }
+        function onLinkSettingsChanged() { root.bumpVersion() }
     }
 
     // Pull external content changes (navigate / new / delete / slash / toggle).
@@ -214,10 +215,35 @@ Item {
                 font.pixelSize: root.fnt.size
                 color: root.colText
                 text: row.buildHtml(row.lineData)
-                onLinkActivated: function (url) { backend.open_url(url) }
+
+                // Modifier-aware link interaction:
+                //   Ctrl+Click          -> open the full URL in the browser
+                //   Ctrl+Shift+Click   -> toggle expand/shorten for that URL
+                //   plain click         -> place the caret (same as clicking text)
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.LeftButton
+                    cursorShape: rowText.hoveredLink !== "" ? Qt.PointingHandCursor : Qt.IBeamCursor
+                    onClicked: function (mouse) {
+                        var href = rowText.linkAt(mouse.x, mouse.y)
+                        if (href === "") {
+                            root.moveToLine(row.index, root.lines[row.index].length)
+                            return
+                        }
+                        if ((mouse.modifiers & Qt.ControlModifier) && (mouse.modifiers & Qt.ShiftModifier)) {
+                            backend.toggle_link_expand(href)
+                        } else if (mouse.modifiers & Qt.ControlModifier) {
+                            backend.open_url(href)
+                        } else {
+                            root.moveToLine(row.index, root.lines[row.index].length)
+                        }
+                    }
+                }
             }
 
-            // Build rich-text HTML from the per-character spans.
+            // Build rich-text HTML from the per-character spans. Link spans use
+            // the full URL (s.url) as the href and the (possibly shortened)
+            // s.text as the visible label.
             function buildHtml(d) {
                 if (!d || !d.spans || d.spans.length === 0)
                     return "&nbsp;"
@@ -231,7 +257,8 @@ Item {
                     if (s.italic) style += "font-style:italic;"
                     if (s.strike) style += "text-decoration:line-through;"
                     if (s.link) {
-                        html += "<a href=\"" + s.text + "\" style=\"" + style
+                        var href = s.url ? s.url : s.text
+                        html += "<a href=\"" + root.escapeHtml(href) + "\" style=\"" + style
                               + "text-decoration:underline;\">" + t + "</a>"
                     } else {
                         html += "<span style=\"" + style + "\">" + t + "</span>"

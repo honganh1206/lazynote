@@ -91,6 +91,67 @@ def test_links_are_flagged():
     link_text = "".join(s.text for s in r.spans if s.link)
     assert link_text == "https://example.com"
     assert all(s.color.lower() == "#79b8e0" for s in r.spans if s.link)
+    # url carries the full URL even when not shortening
+    assert all(s.url == "https://example.com" for s in r.spans if s.link)
+
+
+def test_link_span_url_carries_full_url_when_not_link():
+    r = _render("plain text", 0, -1)
+    assert all(s.url is None for s in r.spans)
+
+
+def test_shorten_replaces_visible_text_keeps_url():
+    doc = "see https://github.com/owner/repo/issues/123 now"
+    r = line_render_spans(doc, 0, -1, shorten=True)
+    link = next(s for s in r.spans if s.link)
+    assert link.text == "github.com/…/123"
+    assert link.url == "https://github.com/owner/repo/issues/123"
+
+
+def test_shorten_off_keeps_full_url_visible():
+    doc = "see https://github.com/owner/repo/issues/123 now"
+    r = line_render_spans(doc, 0, -1, shorten=False)
+    link = next(s for s in r.spans if s.link)
+    assert link.text == "https://github.com/owner/repo/issues/123"
+    assert link.url == "https://github.com/owner/repo/issues/123"
+
+
+def test_expand_set_keeps_full_url_visible():
+    url = "https://github.com/owner/repo/issues/123"
+    doc = f"see {url} now"
+    r = line_render_spans(doc, 0, -1, shorten=True, expand_set={url})
+    link = next(s for s in r.spans if s.link)
+    assert link.text == url
+    assert link.url == url
+
+
+def test_occurrence_map_suffixes_duplicates():
+    url = "https://example.com/a/b/c"
+    doc = f"{url}\n{url}\n{url}"
+    # line 2 starts after "url\nurl\n" = len(url)+1 + len(url)+1
+    line2_start = (len(url) + 1) + (len(url) + 1)
+    occ = {0: 1, len(url) + 1: 2, line2_start: 3}
+    r = line_render_spans(doc, 2, -1, shorten=True, occurrence_by_offset=occ)
+    link = next(s for s in r.spans if s.link)
+    assert link.text == "example.com/…/c[3]"
+    assert link.url == url
+
+
+def test_occurrence_first_has_no_suffix():
+    url = "https://example.com/a/b/c"
+    doc = f"{url}\n{url}"
+    occ = {0: 1, len(url) + 1: 2}
+    r0 = line_render_spans(doc, 0, -1, shorten=True, occurrence_by_offset=occ)
+    r1 = line_render_spans(doc, 1, -1, shorten=True, occurrence_by_offset=occ)
+    assert next(s for s in r0.spans if s.link).text == "example.com/…/c"
+    assert next(s for s in r1.spans if s.link).text == "example.com/…/c[2]"
+
+
+def test_hyperlink_features_disabled_emits_no_link_spans():
+    doc = "see https://github.com/owner/repo/issues/123 now"
+    r = line_render_spans(doc, 0, -1, shorten=True, hyperlink_features=False)
+    assert not any(s.link for s in r.spans)
+    assert not any(s.url for s in r.spans)
 
 
 def test_empty_line_renders_empty():

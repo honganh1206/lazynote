@@ -35,3 +35,19 @@ def parse_links(text: str) -> list[LinkSegment]:
     if not segments and text:
         segments.append(LinkSegment("text", text, text))
     return segments
+
+
+def link_occurrence_by_offset(doc: str) -> dict[int, int]:
+    """Map each link's start offset to its 1-based occurrence index among equal URLs.
+
+    First occurrence of a URL → 1, second → 2, etc. Used by the render path to
+    append Antinote's `[#]` duplicate disambiguator on a per-occurrence basis
+    (the same URL appearing three times shows `…`, `…[2]`, `…[3]`).
+    """
+    counts: dict[str, int] = {}
+    out: dict[int, int] = {}
+    for m in _URL_RE.finditer(doc):
+        url = m.group(0)
+        counts[url] = counts.get(url, 0) + 1
+        out[m.start()] = counts[url]
+    return out

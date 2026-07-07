@@ -20,6 +20,9 @@
 # QtCore/Gui/Widgets/Qml/Quick/QuickControls2 (+ Network/DBus/OpenGL); it stores
 # data via stdlib sqlite3, not QtSql.
 
+import os
+import subprocess
+from collections import deque
 from pathlib import PurePosixPath
 
 from PyInstaller.utils.hooks import collect_data_files
@@ -134,6 +137,78 @@ _keep_plugin_types = {
 }
 
 
+# Loose shared libraries that are loaded at runtime via dlopen (or by the
+# PyInstaller bootloader EXE) rather than appearing in any kept binary's
+# DT_NEEDED. A pure NEEDED-reachability pass would wrongly drop them, so they
+# are kept unconditionally here.
+def _always_keep_loose(soname):
+    # libpython3.x.so -> dlopened by the bootloader to start the interpreter.
+    # libharfbuzz.so.0 -> Qt loads it for text shaping even though it's not in
+    # libQt6Gui/libfreetype's NEEDED list.
+    return soname.startswith("libpython3") or soname == "libharfbuzz.so.0"
+
+
+_needed_cache: dict[str, set[str]] = {}
+
+
+def _needed_sonames(path: str) -> set[str]:
+    cached = _needed_cache.get(path)
+    if cached is not None:
+        return cached
+    names: set[str] = set()
+    try:
+        out = subprocess.run(
+            ["objdump", "-p", path],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        _needed_cache[path] = names
+        return names
+    for line in out.splitlines():
+        line = line.strip()
+        if line.startswith("NEEDED "):
+            names.add(line.split(None, 1)[1])
+    _needed_cache[path] = names
+    return names
+
+
+def _prune_orphan_loose_libs(binaries):
+    # PyInstaller resolves the full transitive closure of *all* binaries it
+    # collected before our Qt allowlist prune runs. The libs that those since-
+    # removed Qt modules dragged in (the GTK3 stack, ALSA/Pulse audio chain, NSS,
+    # orphan libssl, ...) are still sitting in a.binaries with no remaining
+    # linker that references them. Recompute DT_NEEDED reachability from the
+    # kept roots and drop the orphans.
+    loose: dict[str, object] = {}  # soname -> entry
+    roots: list[object] = []
+    for entry in binaries:
+        dest = str(entry[0])
+        if "/" not in dest and os.path.basename(dest).startswith("lib"):
+            loose[dest] = entry
+        else:
+            roots.append(entry)
+    reachable: set[str] = set()
+    queue: deque[str] = deque()
+    for entry in roots:
+        for soname in _needed_sonames(entry[1]):
+            queue.append(soname)
+    while queue:
+        soname = queue.popleft()
+        if soname in reachable:
+            continue
+        reachable.add(soname)
+        linked = loose.get(soname)
+        if linked is not None:
+            for dep in _needed_sonames(linked[1]):
+                queue.append(dep)
+    # Always-keep libs (dlopened or bootloader-loaded) survive even if no kept
+    # binary lists them in NEEDED.
+    reachable.update(soname for soname in loose if _always_keep_loose(soname))
+    return roots + [entry for soname, entry in loose.items() if soname in reachable]
+
+
 def _qt_payload_entry_name(entry):
     # TOC entries are usually (dest_name, src_name, typecode), but some PyInstaller
     # APIs use (src, dest). Match against both path-like fields defensively.
@@ -189,6 +264,20 @@ a = Analysis(
 
 a.binaries = [entry for entry in a.binaries if _keep_qt_payload(entry)]
 a.datas = [entry for entry in a.datas if _keep_qt_payload(entry)]
+# The app does no TLS / no hashing (only urllib.parse.quote, which is pure
+# Python). Drop the _ssl/_hashlib CPython extension modules so the reachability
+# pass below also drops libcrypto/libssl (~6 MB) that nothing else links. The
+# pure-Python ssl/hashlib wrappers stay (harmless; never imported), which keeps
+# PyInstaller's stdlib import graph (e.g. logging) intact.
+a.binaries = [
+    entry
+    for entry in a.binaries
+    if not os.path.basename(str(entry[0])).startswith(("_hashlib.", "_ssl."))
+]
+# Drop transitive libs orphaned by the Qt allowlist prune above (GTK3, ALSA/Pulse,
+# NSS, orphan libssl, ...). Must run AFTER the Qt prune so the kept root set is
+# final before reachability is recomputed.
+a.binaries = _prune_orphan_loose_libs(a.binaries)
 
 pyz = PYZ(a.pure)
 

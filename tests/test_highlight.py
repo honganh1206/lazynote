@@ -64,3 +64,19 @@ def test_no_links_on_todo_keyword_line():
     links = [x for x in r if x.kind == "link"]
     assert len(links) == 1
     assert doc[links[0].from_ : links[0].to] == "https://b.com"
+
+
+def test_hyperlink_features_disabled_emits_no_links():
+    doc = "see https://example.com and https://other.com/x/y/z"
+    r = compute_ranges(doc, 99, hyperlink_features=False)
+    assert not any(x.kind == "link" for x in r)
+
+
+def test_hyperlink_features_disabled_keeps_headings_and_checkboxes():
+    doc = "todo:\n# Heading\nbuy milk\n// comment\nsee https://x.com"
+    r = compute_ranges(doc, 0, hyperlink_features=False)
+    kinds = {x.kind for x in r}
+    assert "heading1" in kinds
+    assert "checkbox_unchecked" in kinds
+    assert "comment" in kinds
+    assert "link" not in kinds

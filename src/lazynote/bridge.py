@@ -15,6 +15,7 @@ from lazynote import fonts, obsidian, store, theme
 from lazynote.editormodel import line_render_spans
 from lazynote.geometry import Geometry, is_on_screen, parse_geometry
 from lazynote.notestate import NoteState
+from lazynote.parse.links import link_occurrence_by_offset
 from lazynote.parse.mode import REGISTERED_KEYWORDS, detect_mode
 
 SAVE_DEBOUNCE_MS = 500
@@ -27,6 +28,7 @@ class Backend(QObject):
     toggleWindowRequested = Signal()
     themeChanged = Signal()
     fontChanged = Signal()
+    linkSettingsChanged = Signal()
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -36,6 +38,10 @@ class Backend(QObject):
         self._save_timer.setSingleShot(True)
         self._save_timer.setInterval(SAVE_DEBOUNCE_MS)
         self._save_timer.timeout.connect(self._state.save_current)
+
+        # Per-note expanded-link state (session-only). URLs in this set render
+        # full-length even when auto-shortening is on. Keyed by URL value.
+        self._expanded_urls: set[str] = set()
 
         hints = QGuiApplication.styleHints()
         if hints is not None:
@@ -210,6 +216,8 @@ class Backend(QObject):
     @Slot(str, str)
     def setting_set(self, key: str, value: str) -> None:
         store.get_settings().set(key, value)
+        if key in ("link_shortening", "hyperlink_features"):
+            self.linkSettingsChanged.emit()
 
     @Slot(int, int, int, int)
     def save_geometry(self, x: int, y: int, w: int, h: int) -> None:
@@ -268,11 +276,29 @@ class Backend(QObject):
         """Per-line render data for the bespoke editor: styled spans + checkbox.
 
         Returns {"text": raw line text, "checkbox": ""|"checked"|"unchecked",
-                 "spans": [{text,color,italic,strike,hidden,link}, ...]}.
+                 "spans": [{text,color,italic,strike,hidden,link,url}, ...]}.
+
+        Links are shortened on non-cursor lines per the `link_shortening` setting
+        and the per-note expand set; `span.url` carries the full URL so click/copy
+        use the stored truth. `hyperlink_features=False` suppresses links entirely.
         """
+        settings = store.get_settings()
+        hyperlink_features = settings.get("hyperlink_features") != "false"
+        shorten = hyperlink_features and settings.get("link_shortening") != "false"
+        content = self._state.content
+        occ = link_occurrence_by_offset(content) if shorten else {}
         pal = theme.palette_for(self._theme_mode(), self._os_scheme())
-        lr = line_render_spans(self._state.content, line, cursor_line, palette=pal)
-        lines = self._state.content.split("\n")
+        lr = line_render_spans(
+            content,
+            line,
+            cursor_line,
+            palette=pal,
+            shorten=shorten,
+            expand_set=self._expanded_urls,
+            occurrence_by_offset=occ,
+            hyperlink_features=hyperlink_features,
+        )
+        lines = content.split("\n")
         raw = lines[line] if 0 <= line < len(lines) else ""
         return {
             "text": raw,
@@ -285,10 +311,26 @@ class Backend(QObject):
                     "strike": s.strike,
                     "hidden": s.hidden,
                     "link": s.link,
+                    "url": s.url,
                 }
                 for s in lr.spans
             ],
         }
+
+    @Slot(str)
+    def toggle_link_expand(self, url: str) -> None:
+        """Toggle a URL's membership in the per-note expanded set, then re-render.
+
+        When a URL is expanded it renders full-length regardless of the
+        auto-shortening setting. Toggling again re-shortens it.
+        """
+        if not url:
+            return
+        if url in self._expanded_urls:
+            self._expanded_urls.discard(url)
+        else:
+            self._expanded_urls.add(url)
+        self.contentChanged.emit()
 
     @Slot(int)
     def toggle_checkbox(self, line: int) -> None:
