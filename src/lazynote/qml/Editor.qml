@@ -144,6 +144,11 @@ Item {
         }
     }
 
+    // Transient OCR status feedback (fleshed out in the status-label task).
+    function showOcrStatus(msg, isError) {
+        // Replaced by the transient status label implementation.
+    }
+
     Component.onCompleted: {
         docText = backend.content
         rebuildLines()
@@ -170,6 +175,13 @@ Item {
                 Qt.callLater(root.ensureEditor)
             }
         }
+    }
+
+    // OCR result/feedback from the bridge's async worker.
+    Connections {
+        target: backend
+        function onOcrComplete(text) { root.pasteText(text) }
+        function onOcrStatus(msg, isError) { root.showOcrStatus(msg, isError) }
     }
 
     ListView {
@@ -347,7 +359,12 @@ Item {
                         e.accepted = true
                     }
                     Keys.onPressed: function (e) {
-                        if (e.key === Qt.Key_Backspace && cursorPosition === 0 && selectionStart === selectionEnd) {
+                        if ((e.modifiers & Qt.ControlModifier) && e.key === Qt.Key_V) {
+                            var t = backend.paste_or_ocr()
+                            if (t !== "")
+                                root.pasteText(t)
+                            e.accepted = true
+                        } else if (e.key === Qt.Key_Backspace && cursorPosition === 0 && selectionStart === selectionEnd) {
                             root.joinWithPrev(row.index)
                             e.accepted = true
                         } else if (e.key === Qt.Key_Up) {
