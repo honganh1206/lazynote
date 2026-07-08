@@ -29,11 +29,24 @@ and the bespoke **Option B** (`EditorB.qml`, per-line styled delegates with real
 - Window position/size remembered across restarts
 - `todo:` mode with checklist items (`/x` to check), `#` headings, `//` comments
 - Plain mode with markdown-style headings and clickable links
+- **Clipboard OCR:** take a screenshot with your desktop tool, press **Ctrl+V** in
+  Lazynote, and the recognized text is inserted at the cursor (multi-line
+  preserved). Requires Tesseract (see Prerequisites).
 
 ## Prerequisites
 
 - **Python 3.12+**
 - A Qt 6 platform (PySide6 ships its own Qt for development)
+- **Tesseract OCR** — for the screenshot-to-text paste feature:
+
+  ```bash
+  sudo apt update
+  sudo apt install tesseract-ocr tesseract-ocr-eng
+  ```
+
+  The `.deb` package recommends `tesseract-ocr`, so apt installs it by default
+  when you `apt install ./lazynote_*.deb`. If it's missing, Ctrl+V on a
+  screenshot shows an install hint toast.
 
 ## Development
 

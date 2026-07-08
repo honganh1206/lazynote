@@ -7,11 +7,15 @@ QML reads `content`/`index`/`count`/`mode` properties and calls the slots.
 from __future__ import annotations
 
 import json
+import threading
 
-from PySide6.QtCore import Property, Qt, QObject, QTimer, QUrl, Signal, Slot
-from PySide6.QtGui import QDesktopServices, QFontDatabase, QFontInfo, QGuiApplication
+from PySide6.QtCore import (
+    Property, Qt, QObject, QTimer, QUrl, Signal, Slot,
+    QBuffer, QIODevice,
+)
+from PySide6.QtGui import QDesktopServices, QFontDatabase, QFontInfo, QGuiApplication, QImage
 
-from lazynote import fonts, obsidian, store, theme
+from lazynote import fonts, obsidian, ocr, store, theme
 from lazynote.editormodel import line_render_spans
 from lazynote.geometry import Geometry, is_on_screen, parse_geometry
 from lazynote.notestate import NoteState
@@ -29,6 +33,8 @@ class Backend(QObject):
     themeChanged = Signal()
     fontChanged = Signal()
     linkSettingsChanged = Signal()
+    ocrComplete = Signal(str)        # recognized text
+    ocrStatus = Signal(str, bool)    # (message, isError)
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -344,3 +350,50 @@ class Backend(QObject):
             return
         lines[line] = text[:-2] if text.endswith("/x") else text + "/x"
         self.edit("\n".join(lines))
+
+    # ---- clipboard OCR ----
+    @Slot(result=str)
+    def paste_or_ocr(self) -> str:
+        """Ctrl+V handler. Returns text to paste now, or "" to wait for OCR.
+
+        - clipboard has an image → "", starts async OCR; result via ocrComplete.
+        - clipboard has text → returns it; QML pastes immediately.
+        - empty clipboard → "".
+        """
+        cb = QGuiApplication.clipboard()
+        img = cb.image()
+        if not img.isNull():
+            self.ocrStatus.emit("Recognizing…", False)
+            self._start_ocr(img)
+            return ""
+        return cb.text()
+
+    def _start_ocr(self, image: QImage) -> None:
+        """Encode the image to PNG on the GUI thread, then OCR on a worker."""
+        buf = QBuffer()
+        buf.open(QIODevice.WriteOnly)
+        image.save(buf, "PNG")
+        png = bytes(buf.data())
+        lang = store.get_settings().get("ocr_lang") or "eng"
+        t = threading.Thread(target=self._ocr_worker, args=(png, lang), daemon=True)
+        t.start()
+
+    def _ocr_worker(self, png: bytes, lang: str) -> None:
+        """Runs on a daemon thread; emits signals delivered to the GUI thread."""
+        try:
+            text = ocr.run_ocr(png, lang=lang)
+        except ocr.OcrUnavailable:
+            self.ocrStatus.emit(
+                "OCR needs tesseract: sudo apt install tesseract-ocr", True
+            )
+            return
+        except ocr.OcrFailed as e:
+            self.ocrStatus.emit(f"OCR failed: {e}", True)
+            return
+        except Exception as e:
+            self.ocrStatus.emit(f"OCR failed: {e}", True)
+            return
+        if not text:
+            self.ocrStatus.emit("No text recognized", True)
+            return
+        self.ocrComplete.emit(text)

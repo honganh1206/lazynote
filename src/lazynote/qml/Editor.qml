@@ -111,6 +111,53 @@ Item {
         Qt.callLater(ensureEditor)
     }
 
+    // Multi-line paste at the cursor. Generalizes splitLine to N lines using
+    // the same lines[]/pushEdit/ensureEditor contract (safe with the
+    // onTextChanged "if (text !== root.lines[row.index])" guard and the
+    // syncing flag in pushEdit).
+    function pasteText(text) {
+        if (text === "")
+            return
+        var parts = text.split("\n")
+        var line = lines[cursorLine]
+        var col = cursorCol
+        var head = line.substring(0, col)
+        var tail = line.substring(col)
+        var arr = lines.slice()
+        if (parts.length === 1) {
+            arr[cursorLine] = head + parts[0] + tail
+            lines = arr
+            cursorCol = col + parts[0].length
+            pushEdit()
+            ensureEditor()
+        } else {
+            var first = head + parts[0]
+            var last = parts[parts.length - 1] + tail
+            var middle = parts.slice(1, -1)
+            arr.splice(cursorLine, 1, first, ...middle, last)
+            lines = arr
+            cursorLine = cursorLine + parts.length - 1
+            cursorCol = parts[parts.length - 1].length
+            list.model = lines.length
+            pushEdit()
+            Qt.callLater(ensureEditor)
+        }
+    }
+
+    // Transient OCR status feedback (fleshed out in the status-label task).
+    property string ocrStatusText: ""
+    property bool ocrStatusError: false
+
+    function showOcrStatus(msg, isError) {
+        if (msg === "") {
+            ocrStatusText = ""
+            return
+        }
+        ocrStatusText = msg
+        ocrStatusError = isError
+        statusFade.restart()
+    }
+
     Component.onCompleted: {
         docText = backend.content
         rebuildLines()
@@ -137,6 +184,13 @@ Item {
                 Qt.callLater(root.ensureEditor)
             }
         }
+    }
+
+    // OCR result/feedback from the bridge's async worker.
+    Connections {
+        target: backend
+        function onOcrComplete(text) { root.pasteText(text) }
+        function onOcrStatus(msg, isError) { root.showOcrStatus(msg, isError) }
     }
 
     ListView {
@@ -314,7 +368,12 @@ Item {
                         e.accepted = true
                     }
                     Keys.onPressed: function (e) {
-                        if (e.key === Qt.Key_Backspace && cursorPosition === 0 && selectionStart === selectionEnd) {
+                        if ((e.modifiers & Qt.ControlModifier) && e.key === Qt.Key_V) {
+                            var t = backend.paste_or_ocr()
+                            if (t !== "")
+                                root.pasteText(t)
+                            e.accepted = true
+                        } else if (e.key === Qt.Key_Backspace && cursorPosition === 0 && selectionStart === selectionEnd) {
                             root.joinWithPrev(row.index)
                             e.accepted = true
                         } else if (e.key === Qt.Key_Up) {
@@ -340,6 +399,25 @@ Item {
             opacity: 0
             Component.onCompleted: appear.start()
             NumberAnimation { id: appear; target: row; property: "opacity"; to: 1; duration: 140 }
+        }
+    }
+
+    // Transient OCR status label: fades in when text is set, fades out after 3s.
+    Text {
+        id: ocrStatusLabel
+        text: root.ocrStatusText
+        color: root.ocrStatusError ? "#d97757" : root.colMuted
+        font.family: root.fnt.family
+        font.pixelSize: root.fnt.size - 2
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        anchors.margins: 8
+        opacity: root.ocrStatusText === "" ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: 160 } }
+        Timer {
+            id: statusFade
+            interval: 3000
+            onTriggered: root.ocrStatusText = ""
         }
     }
 
