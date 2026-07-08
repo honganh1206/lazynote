@@ -145,8 +145,17 @@ Item {
     }
 
     // Transient OCR status feedback (fleshed out in the status-label task).
+    property string ocrStatusText: ""
+    property bool ocrStatusError: false
+
     function showOcrStatus(msg, isError) {
-        // Replaced by the transient status label implementation.
+        if (msg === "") {
+            ocrStatusText = ""
+            return
+        }
+        ocrStatusText = msg
+        ocrStatusError = isError
+        statusFade.restart()
     }
 
     Component.onCompleted: {
@@ -390,6 +399,25 @@ Item {
             opacity: 0
             Component.onCompleted: appear.start()
             NumberAnimation { id: appear; target: row; property: "opacity"; to: 1; duration: 140 }
+        }
+    }
+
+    // Transient OCR status label: fades in when text is set, fades out after 3s.
+    Text {
+        id: ocrStatusLabel
+        text: root.ocrStatusText
+        color: root.ocrStatusError ? "#d97757" : root.colMuted
+        font.family: root.fnt.family
+        font.pixelSize: root.fnt.size - 2
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        anchors.margins: 8
+        opacity: root.ocrStatusText === "" ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: 160 } }
+        Timer {
+            id: statusFade
+            interval: 3000
+            onTriggered: root.ocrStatusText = ""
         }
     }
 
