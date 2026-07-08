@@ -44,6 +44,7 @@ Architecture: ${ARCH}
 Maintainer: Hong Anh Pham <phamhonganh12062000@gmail.com>
 Installed-Size: ${INSTALLED_KB}
 Depends: libegl1, libgl1, libxkbcommon0, libdbus-1-3, libfontconfig1, libfreetype6, libxcb-cursor0
+Recommends: tesseract-ocr
 Description: A lightweight native scratchpad
  Always-accessible scratchpad for temporary notes, inspired by Antinote.
  Frameless, translucent, always-on-top window with todo mode, clickable
