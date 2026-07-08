@@ -42,3 +42,31 @@ def test_run_ocr_passes_lang_and_psm(monkeypatch):
     monkeypatch.setattr(ocr.subprocess, "run", _run)
     ocr.run_ocr(b"img", lang="fra", psm=3)
     assert seen["cmd"] == ["tesseract", "-", "-", "--psm", "3", "-l", "fra"]
+
+
+def test_run_ocr_raises_when_binary_missing(monkeypatch):
+    monkeypatch.setattr(ocr.shutil, "which", lambda cmd: None)
+    try:
+        ocr.run_ocr(b"img")
+    except ocr.OcrUnavailable:
+        return
+    raise AssertionError("expected OcrUnavailable")
+
+
+def test_run_ocr_raises_ocrfailed_on_nonzero_exit(monkeypatch):
+    monkeypatch.setattr(ocr.shutil, "which", lambda cmd: "/usr/bin/tesseract")
+    monkeypatch.setattr(
+        ocr.subprocess, "run", _fake_run(returncode=1, stderr=b"bad image")
+    )
+    try:
+        ocr.run_ocr(b"img")
+    except ocr.OcrFailed as e:
+        assert "bad image" in str(e)
+        return
+    raise AssertionError("expected OcrFailed")
+
+
+def test_run_ocr_empty_output_returns_empty_string(monkeypatch):
+    monkeypatch.setattr(ocr.shutil, "which", lambda cmd: "/usr/bin/tesseract")
+    monkeypatch.setattr(ocr.subprocess, "run", _fake_run(stdout=b""))
+    assert ocr.run_ocr(b"img") == ""
