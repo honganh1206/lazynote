@@ -111,6 +111,39 @@ Item {
         Qt.callLater(ensureEditor)
     }
 
+    // Multi-line paste at the cursor. Generalizes splitLine to N lines using
+    // the same lines[]/pushEdit/ensureEditor contract (safe with the
+    // onTextChanged "if (text !== root.lines[row.index])" guard and the
+    // syncing flag in pushEdit).
+    function pasteText(text) {
+        if (text === "")
+            return
+        var parts = text.split("\n")
+        var line = lines[cursorLine]
+        var col = cursorCol
+        var head = line.substring(0, col)
+        var tail = line.substring(col)
+        var arr = lines.slice()
+        if (parts.length === 1) {
+            arr[cursorLine] = head + parts[0] + tail
+            lines = arr
+            cursorCol = col + parts[0].length
+            pushEdit()
+            ensureEditor()
+        } else {
+            var first = head + parts[0]
+            var last = parts[parts.length - 1] + tail
+            var middle = parts.slice(1, -1)
+            arr.splice(cursorLine, 1, first, ...middle, last)
+            lines = arr
+            cursorLine = cursorLine + parts.length - 1
+            cursorCol = parts[parts.length - 1].length
+            list.model = lines.length
+            pushEdit()
+            Qt.callLater(ensureEditor)
+        }
+    }
+
     Component.onCompleted: {
         docText = backend.content
         rebuildLines()
