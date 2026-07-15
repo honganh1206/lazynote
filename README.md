@@ -77,8 +77,10 @@ bash packaging/build-deb.sh 0.1.6                  # -> dist/lazynote_0.1.6_amd6
 ```
 
 Install with `sudo apt install ./lazynote_*.deb` (or `sudo dpkg -i`); `lazynote`
-lands on `PATH`. Releases build the `.deb` automatically — see
-`.github/workflows/cd.yml` (runs when a GitHub Release is published).
+lands on `PATH`. After CI passes on a push to `main`, it invokes the reusable
+`.github/workflows/cd.yml` workflow to build the `.deb` and publish a GitHub
+Release automatically. Tags use the CI run number and tested commit, for example
+`v0.1.40+gc72cf1b`.
 
 Notes migrate automatically on first launch from an older Electron
 (`~/.config/Antinote`) or Tauri (`~/.config/com.honganh.antinote-linux`) install.

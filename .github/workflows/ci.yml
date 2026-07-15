@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -20,3 +23,14 @@ jobs:
         run: ruff check src tests
       - name: Test (headless Qt)
         run: QT_QPA_PLATFORM=offscreen pytest -q
+
+  release:
+    name: CD
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    permissions:
+      contents: write
+    uses: ./.github/workflows/cd.yml
+    with:
+      commit_sha: ${{ github.sha }}
+      run_number: ${{ github.run_number }}

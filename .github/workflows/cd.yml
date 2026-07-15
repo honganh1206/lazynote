@@ -1,21 +1,28 @@
 name: CD
 
-# Build and attach a .deb to a GitHub Release.
-# Trigger: publish a Release (tag like v0.1.0). The tag name (minus the
-# leading "v") becomes the package version.
 on:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      commit_sha:
+        description: Commit that passed CI
+        required: true
+        type: string
+      run_number:
+        description: CI run number used for the release version
+        required: true
+        type: string
 
 permissions:
-  contents: write # upload release assets
+  contents: write
 
 jobs:
   deb:
-    name: Build .deb (PyInstaller)
+    name: Build and release .deb
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -25,11 +32,24 @@ jobs:
         run: pip install pyinstaller .
       - name: Freeze app
         run: pyinstaller --noconfirm packaging/lazynote.spec
-      - name: Build .deb
+      - name: Calculate version
+        id: version
+        env:
+          COMMIT_SHA: ${{ inputs.commit_sha }}
+          RUN_NUMBER: ${{ inputs.run_number }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          bash packaging/build-deb.sh "$VERSION"
-      - name: Upload to release
+          SHORT_SHA="${COMMIT_SHA::7}"
+          VERSION="0.1.${RUN_NUMBER}+g${SHORT_SHA}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Build .deb
+        run: bash packaging/build-deb.sh "${{ steps.version.outputs.version }}"
+      - name: Create release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ inputs.commit_sha }}
+          name: Lazynote ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
           files: dist/*.deb
