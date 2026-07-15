@@ -6,7 +6,7 @@ import QtQuick.Controls
 // The whole document text is the source of truth (`docText`), synced to the
 // backend via backend.content / backend.edit. It
 // is split into `lines`; each line is a ListView delegate. The line that holds
-// the caret is an editable TextInput showing the RAW text (so `/x` is visible &
+// the caret is an editable TextEdit showing the RAW text (so `/x` is visible &
 // editable); every other line is rendered statically from backend.line_render()
 // spans — real ☐/☑ glyphs, hidden `/x`, heading colours, dim italic comments,
 // strikethrough for checked items, and clickable links. Enter splits a line,
@@ -57,7 +57,7 @@ Item {
         bumpVersion()
     }
 
-    // Focus the TextInput for the current cursor line (after the delegate exists).
+    // Focus the TextEdit for the current cursor line (after the delegate exists).
     function ensureEditor() {
         list.positionViewAtIndex(cursorLine, ListView.Contain)
         var it = list.itemAtIndex(cursorLine)
@@ -216,7 +216,9 @@ Item {
         delegate: Item {
             id: row
             width: list.width
-            height: Math.max(rowText.implicitHeight, 22)
+            height: Math.max(rowText.implicitHeight,
+                             editorLoader.item ? editorLoader.item.contentHeight : 0,
+                             22)
 
             required property int index
             property bool isCursorLine: index === root.cursorLine
@@ -233,8 +235,8 @@ Item {
             Text {
                 id: box
                 visible: row.checkbox !== ""
-                anchors.verticalCenter: row.verticalCenter
                 x: 0
+                y: Math.max(0, (22 - implicitHeight) / 2)
                 text: row.checkbox === "checked" ? "☑" : "☐"
                 color: row.checkbox === "checked" ? root.colMuted : root.colText
                 font.family: root.fnt.family
@@ -327,21 +329,24 @@ Item {
                 active: row.isCursorLine
                 x: row.textLeft
                 width: row.width - row.textLeft
-                anchors.verticalCenter: row.verticalCenter
+                height: row.height
                 sourceComponent: lineEditor
             }
 
             Component {
                 id: lineEditor
-                TextInput {
+                TextEdit {
                     id: input
                     text: root.lines[row.index] !== undefined ? root.lines[row.index] : ""
+                    textFormat: TextEdit.PlainText
                     color: root.colText
                     selectionColor: backend ? backend.colors.selection : "#34363b"
                     selectByMouse: true
                     font.family: root.fnt.family
                     font.pixelSize: root.fnt.size
-                    verticalAlignment: TextInput.AlignVCenter
+                    verticalAlignment: TextEdit.AlignVCenter
+                    wrapMode: TextEdit.Wrap
+                    clip: true
 
                     function takeFocus(col) {
                         forceActiveFocus()
